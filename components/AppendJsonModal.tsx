@@ -75,8 +75,12 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
             onClose();
 
         } catch (e: any) {
-            console.error(e);
-            setError(e.message || 'เกิดข้อผิดพลาดในการอ่าน JSON');
+            // Don't log to console to avoid Next.js error overlay for user input errors
+            let msg = 'ข้อมูล JSON ไม่ถูกต้อง';
+            if (e instanceof SyntaxError) {
+                msg = 'รูปแบบ JSON ไม่ถูกต้อง (อาจก๊อปปี้มาไม่ครบ หรือมีตัวอักษรเกิน)';
+            }
+            setError(msg);
         }
     };
 

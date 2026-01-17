@@ -1,0 +1,307 @@
+@import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --paper: #ffffff;
+  --font-family-base: var(--font-sarabun);
+  --border-subtle: #e4e4e7;
+  --bg-subtle: #f4f4f5;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --paper: #ffffff;
+  /* Paper always white */
+  --border-subtle: #27272a;
+  --bg-subtle: #18181b;
+  --card: #09090b;
+  --card-foreground: #fafafa;
+  --popover: #09090b;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #7f1d1d;
+  --destructive-foreground: #fafafa;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #d4d4d8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --font-sans: var(--font-sarabun);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-family-base), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Base styles for Markdown content */
+.prose h1 {
+  @apply text-2xl font-bold mb-4;
+}
+
+.prose h2 {
+  @apply text-xl font-bold mb-3 mt-6;
+}
+
+.prose h3 {
+  @apply text-lg font-bold mb-2 mt-4;
+}
+
+.prose p {
+  @apply mb-4 leading-loose;
+}
+
+.prose ul {
+  @apply list-disc list-outside ml-5 mb-4 leading-loose;
+}
+
+.prose ol {
+  @apply list-decimal list-outside ml-5 mb-4 leading-loose;
+}
+
+.prose strong {
+  @apply font-bold;
+}
+
+.prose em {
+  @apply italic;
+}
+
+/* Font Logic */
+.font-sarabun {
+  --font-family-base: var(--font-sarabun);
+}
+
+.font-mali {
+  --font-family-base: var(--font-mali);
+}
+
+.font-chakra {
+  --font-family-base: var(--font-chakra);
+}
+
+.font-niramit {
+  --font-family-base: var(--font-niramit);
+}
+
+.font-charm {
+  --font-family-base: var(--font-charm);
+}
+
+/* A4 Paper Dimensions */
+.a4-paper {
+  width: 210mm;
+  min-height: 297mm;
+  background: var(--paper);
+  margin: 0 auto;
+  padding: 20mm;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-sizing: border-box;
+}
+
+/* Print Specifics */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 10mm;
+  }
+
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .a4-paper {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 10mm !important;
+    box-shadow: none !important;
+    background: white !important;
+    border: none !important;
+  }
+
+  /* Fixed Branding */
+  .print-header-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 15mm;
+    padding: 0 10mm;
+    display: flex !important;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    background: white;
+    z-index: 50;
+  }
+
+  .print-footer-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10mm;
+    padding: 0 10mm;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #ddd;
+    background: white;
+    z-index: 50;
+  }
+
+  /* Hide UI elements during print */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Force page breaks */
+  .break-before-page {
+    break-before: page;
+  }
+
+  .break-after-page {
+    break-after: page;
+  }
+
+  /* ===========================================
+     PREVENT AWKWARD PAGE BREAKS
+     - Elements that should NOT be split across pages
+     =========================================== */
+
+  /* Headings should not be orphaned at bottom of page */
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  /* Keep each question/problem together */
+  .question-item,
+  .exercise-item,
+  .example-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Exam question blocks - keep question + options together */
+  .section-exam>div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Info boxes should not split */
+  [class*="bg-blue-50"],
+  [class*="bg-yellow-50"],
+  [class*="bg-green-50"],
+  [class*="bg-purple-50"],
+  [class*="bg-gray-50"],
+  [class*="border-l-4"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Lesson sections - keep each major section together if possible */
+  .section-lesson>div,
+  .section-lecture>div {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 5mm;
+  }
+
+  /* Tables and figures */
+  table,
+  figure,
+  img {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Lists - try to keep lists together */
+  ul,
+  ol {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Paragraphs - allow breaking but leave at least 2 lines */
+  p {
+    orphans: 2;
+    widows: 2;
+  }
+
+  /* Add some spacing between sections for cleaner page breaks */
+  .mb-6,
+  .mb-8 {
+    margin-bottom: 8mm;
+  }
+}
+
+/* ===========================================
+   INVISIBLE INK (TEACHER VS STUDENT MODE)
+   =========================================== */
+.text-invisible {
+  color: transparent !important;
+  user-select: none;
+  /* Ensure it still takes up space */
+  display: block;
+  /* or inline-block depending on context, keeping default serves most purposes */
+}
+
+/* Optional: if there are borders/backgrounds we want to hide in student mode but keep space */
+.invisible-box {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Ensure images/icons in invisible zones are also hidden (but keep space?? usually we want them gone or invisible) */
+.text-invisible img,
+.text-invisible svg {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  /* visibility: hidden keeps space, display: none removes it */
+}

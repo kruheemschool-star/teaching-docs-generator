@@ -7,6 +7,21 @@ interface ExerciseRendererProps {
     showAnswers?: boolean;
 }
 
+const getDifficultyBadge = (difficulty?: string) => {
+    switch (difficulty) {
+        case 'ง่าย':
+            return <span className="inline-block px-2 py-0.5 mr-2 rounded text-xs font-bold bg-green-100 text-green-700">ง่าย</span>;
+        case 'ปานกลาง':
+            return <span className="inline-block px-2 py-0.5 mr-2 rounded text-xs font-bold bg-yellow-100 text-yellow-700">ปานกลาง</span>;
+        case 'ยาก':
+            return <span className="inline-block px-2 py-0.5 mr-2 rounded text-xs font-bold bg-red-100 text-red-700">ยาก</span>;
+        case 'โจทย์ปัญหา':
+            return <span className="inline-block px-2 py-0.5 mr-2 rounded text-xs font-bold bg-blue-100 text-blue-700">โจทย์ปัญหา</span>;
+        default:
+            return null;
+    }
+};
+
 export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, showAnswers = false }) => {
     return (
         <div className={`mb-8 section-exercise break-inside-avoid ${section.pageBreakBefore ? 'break-before-page' : ''}`}>
@@ -26,9 +41,12 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                 {section.items.map((item, index) => (
                     <div key={item.id || index} className="break-inside-avoid">
                         <div className="flex gap-2 mb-2 font-medium text-lg">
-                            <span className="font-bold">{index + 1}.</span>
+                            <span className="font-bold whitespace-nowrap">{index + 1}.</span>
                             <div className="flex-1">
-                                <RichText content={item.question} />
+                                {item.difficulty && getDifficultyBadge(item.difficulty)}
+                                <div className="inline">
+                                    <RichText content={item.question} />
+                                </div>
                             </div>
                         </div>
 

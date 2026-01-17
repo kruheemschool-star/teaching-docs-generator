@@ -114,6 +114,7 @@ export interface ExerciseItem {
     lines?: number; // Number of dotted lines to render if spaceForWork is true
     answer?: string; // Short answer
     detailedSolution?: string; // Step-by-step solution
+    difficulty?: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
 }
 
 export interface ExerciseSection extends BaseSection {

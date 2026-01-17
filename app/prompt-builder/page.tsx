@@ -320,11 +320,13 @@ type Section = {
     question: string;
     answer: string; // The correct answer
     detailedSolution: string; // Full step-by-step solution method
+    difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
   }[];
 };
 
 Make sure to create exactly ${itemCount} practice questions.
 IMPORTANT: For EVERY item, provide a 'detailedSolution' field showing the step-by-step method to get the answer. This is mandatory.
+IMPORTANT: For EVERY item, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
 IMPORTANT: Do NOT include 'spaceForWork' or 'lines'. We will display the solution directly.
 `;
         } else if (contentType === "lecture") {

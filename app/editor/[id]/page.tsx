@@ -331,7 +331,13 @@ export default function EditorPage() {
                                         }
                                         if (s.practiceProblems) {
                                             s.practiceProblems = s.practiceProblems.map(p => {
-                                                if (typeof p === 'string') return cleanText(p)!;
+                                                if (typeof p === 'string') {
+                                                    return {
+                                                        problem: cleanText(p)!,
+                                                        solution: '',
+                                                        hint: ''
+                                                    };
+                                                }
                                                 return {
                                                     ...p,
                                                     problem: cleanText(p.problem)!,

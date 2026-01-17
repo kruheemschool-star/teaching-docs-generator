@@ -7,9 +7,10 @@ interface LessonRendererProps {
     isEditing?: boolean;
     showAnswers?: boolean;
     onUpdate?: (updatedSection: LessonSection) => void;
+    fontSizeLevel?: number;
 }
 
-export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditing = false, showAnswers = false, onUpdate }) => {
+export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditing = false, showAnswers = false, onUpdate, fontSizeLevel = 0 }) => {
 
     // Auto-convert legacy content to blocks on mount if needed
     useEffect(() => {
@@ -65,6 +66,7 @@ export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditi
                     isEditing={isEditing}
                     showAnswers={showAnswers}
                     onChange={handleBlocksChange}
+                    fontSizeLevel={fontSizeLevel}
                 />
             </div>
         </div>

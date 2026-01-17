@@ -123,15 +123,20 @@ body {
   --font-family-base: var(--font-charm);
 }
 
-/* A4 Paper Dimensions */
+/* Document Container (Web View Mode) */
 .a4-paper {
-  width: 210mm;
-  min-height: 297mm;
+  width: 100%;
+  max-width: 1024px;
+  /* Standard wide desktop view (approx 270mm) */
+  min-height: 80vh;
   background: var(--paper);
   margin: 0 auto;
-  padding: 20mm;
+  padding: 3rem min(4rem, 5vw);
+  /* Comfortable reading padding */
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   box-sizing: border-box;
+  font-size: 18px;
+  line-height: 1.8;
 }
 
 /* Print Specifics */

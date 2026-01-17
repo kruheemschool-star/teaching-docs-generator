@@ -39,8 +39,8 @@ const TEACHING_STYLES: { value: TeachingStyle; label: string; icon: string; desc
 ];
 
 const WRITING_TONES: { value: WritingTone; label: string; icon: string; description: string }[] = [
-    { value: "friendly", label: "เป็นกันเอง", icon: "😊", description: "เข้าใจง่าย คมคาย น่าสนใจ" },
-    { value: "formal", label: "ทางการ", icon: "📄", description: "ภาษาทางการ สุภาพ" },
+    { value: "friendly", label: "เป็นกันเอง", icon: "😊", description: "ครูใจดีสอนศิษย์ เข้าใจง่าย เปรียบเทียบเห็นภาพ" },
+    { value: "formal", label: "ทางการ", icon: "📄", description: "ภาษาทางการ สุภาพ ถูกต้องตามหลักวิชาการ" },
     { value: "professional", label: "จริงจัง", icon: "🎓", description: "เน้นความถูกต้อง" },
     { value: "mentor", label: "พี่สอนน้อง", icon: "👨‍🏫", description: "อบอุ่น ให้กำลังใจ" },
 ];
@@ -68,11 +68,11 @@ const LESSON_DEPTHS: { value: LessonDepth; label: string; icon: string; descript
 ];
 
 const EXAMPLE_STYLES: { value: ExampleStyle; label: string; icon: string; description: string }[] = [
+    { value: "gradual", label: "ค่อยๆ ยาก (Gradual)", icon: "📈", description: "เริ่มจากพื้นฐาน -> ยากขึ้นเรื่อยๆ" },
+    { value: "real-world", label: "จุดที่มักผิดบ่อย (Common Mistakes)", icon: "⚠️", description: "เน้นโจทย์ที่นักเรียนมักทำผิด พร้อมวิธีแก้ไข" },
     { value: "instant", label: "เข้าใจทันที", icon: "🎯", description: "ตัวอย่างง่ายๆ ตรงไปตรงมา" },
-    { value: "funny", label: "ตลกขำขัน", icon: "😂", description: "ใช้สถานการณ์ตลก จำง่าย" },
-    { value: "real-world", label: "ชีวิตจริง", icon: "🌍", description: "ซื้อของ ส่วนลด เงินทอน" },
+    { value: "funny", label: "ตลกขบขัน", icon: "😂", description: "ใช้สถานการณ์ตลก จำง่าย" },
     { value: "game", label: "เกม/การ์ตูน", icon: "🎮", description: "เชื่อมโยงกับเกม/การ์ตูน" },
-    { value: "gradual", label: "ค่อยๆ ยาก", icon: "📈", description: "เริ่มง่าย → ยากขึ้นเรื่อยๆ" },
 ];
 
 export default function PromptBuilder() {
@@ -96,9 +96,9 @@ export default function PromptBuilder() {
     const [lessonDepth, setLessonDepth] = useState<LessonDepth>("standard");
     const [includeExamples, setIncludeExamples] = useState(true);
     const [exampleCount, setExampleCount] = useState(3);
-    const [includePractice, setIncludePractice] = useState(true);
+    const [includePractice, setIncludePractice] = useState(false); // Default false as requested to remove
     const [practiceCount, setPracticeCount] = useState(5);
-    const [exampleStyle, setExampleStyle] = useState<ExampleStyle>("instant");
+    const [exampleStyle, setExampleStyle] = useState<ExampleStyle>("gradual");
 
     const [subTopic, setSubTopic] = useState("");
 
@@ -116,18 +116,6 @@ export default function PromptBuilder() {
         advanced: 3,
         wordProblem: 0
     });
-
-    // Content Add-ons (Special Sections)
-    const [selectedAddOns, setSelectedAddOns] = useState<string[]>(['common-mistakes', 'pro-tips', 'real-world', 'advanced-insight', 'concept-map']);
-    const [customAddOn, setCustomAddOn] = useState("");
-
-    const CONTENT_ADDONS = [
-        { id: 'common-mistakes', label: '⚠️ จุดที่มักผิดบ่อย', description: 'ข้อควรระวัง จุดอันตราย' },
-        { id: 'pro-tips', label: '💡 เทคนิคลัด & คำแนะนำ', description: 'วิธีคิดเร็ว มุมมองช่วยจำ' },
-        { id: 'real-world', label: '🌍 การนำไปใช้จริง', description: 'ยกตัวอย่างในชีวิตประจำวัน' },
-        { id: 'advanced-insight', label: '🔍 เกร็ดความรู้เสริม', description: 'ที่มา ประวัติศาสตร์' },
-        { id: 'concept-map', label: '🗺️ เชื่อมโยงเนื้อหา', description: 'แผนผังความคิด' },
-    ];
 
     // Update itemCount when mixed distribution changes
     useEffect(() => {
@@ -155,7 +143,7 @@ export default function PromptBuilder() {
     // Generate prompt when any relevant state changes
     useEffect(() => {
         generatePrompt();
-    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount, selectedAddOns, customAddOn]);
+    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount]);
 
     const getDisplayGradeLevel = () => {
         const levelInfo = CLASS_LEVELS.find(l => l.value === classLevel);
@@ -173,19 +161,19 @@ export default function PromptBuilder() {
     const getDifficultyInstruction = () => {
         switch (difficulty) {
             case "basic":
-                return "Create questions that focus on BASIC RECALL and fundamental understanding. Keep them simple and straightforward.";
+                return "DIFFICULTY: BASIC (ง่าย). Create questions that focus on BASIC RECALL and fundamental understanding.\nIMPORTANT: ALL questions must be 'ง่าย' (Basic) level only. Do NOT include harder questions.";
             case "intermediate":
-                return "Create questions that require APPLICATION of concepts. Similar to textbook practice problems.";
+                return "DIFFICULTY: INTERMEDIATE (ปานกลาง). Create questions that require APPLICATION of concepts.\nIMPORTANT: ALL questions must be 'ปานกลาง' (Intermediate) level only. Do NOT include advanced questions.";
             case "advanced":
-                return "Create CHALLENGING questions that require ANALYSIS and PROBLEM-SOLVING. Include competition-level problems with twists.";
+                return "DIFFICULTY: ADVANCED (ยาก). Create CHALLENGING questions that require ANALYSIS and PROBLEM-SOLVING.\nIMPORTANT: ALL questions must be 'ยาก' (Advanced) level only. Focus on complex calculations and logic. Do NOT include 'Word Problems' (โจทย์ปัญหา).";
             case "word-problem":
-                return "Create WORD PROBLEMS that require reading comprehension and interpretation of real situations.";
+                return "DIFFICULTY: WORD PROBLEMS (โจทย์ปัญหา). Create questions that require reading comprehension and interpretation of real situations.\nIMPORTANT: ALL questions must be 'โจทย์ปัญหา' (Word Problem) level only. Do NOT include pure calculation questions without story/context.";
             case "mixed":
-                return `Create exactly ${itemCount} questions with the following difficulty breakdown:
-- Basic: ${difficultyDistribution.basic} questions (Focus on basic recall)
-- Intermediate: ${difficultyDistribution.intermediate} questions (Focus on application)
-- Advanced: ${difficultyDistribution.advanced} questions (Focus on complex analysis)
-- Word Problems: ${difficultyDistribution.wordProblem} questions (Focus on real-world interpretation)
+                return `DIFFICULTY: MIXED. Create exactly ${itemCount} questions with the following difficulty breakdown:
+- Basic (ง่าย): ${difficultyDistribution.basic} questions
+- Intermediate (ปานกลาง): ${difficultyDistribution.intermediate} questions
+- Advanced (ยาก): ${difficultyDistribution.advanced} questions
+- Word Problems (โจทย์ปัญหา): ${difficultyDistribution.wordProblem} questions
 
 IMPORTANT: Strictly follow these counts.`;
         }
@@ -207,13 +195,28 @@ IMPORTANT: Strictly follow these counts.`;
     const getWritingToneInstruction = () => {
         switch (writingTone) {
             case "friendly":
-                return "Use a FRIENDLY, ENGAGING, and SHARP tone. Use simple, easy-to-understand language that feels personal but keeps the reader hooked. Make it attractive and interesting, not just casual.";
+                return "Use a 'FRIENDLY TEACHER' tone (ครูใจดีสอนศิษย์). Write as if you are a kind teacher explaining to a student one-on-one.\nIMPORTANT: Explain concepts using ANALOGIES/COMPARISONS to simple, clearly visible everyday things (เปรียบเทียบกับสิ่งง่ายๆ ที่เห็นภาพชัดเจน).\nIMPORTANT: Use SHORT but SHARP/PUNCHY words that have deep meaning (คำสั้นๆ แต่คม ลึกซึ้ง).\nMake it feel warm, encouraging, and immediately understandable.";
             case "formal":
-                return "Use a FORMAL and ACADEMIC tone. Write professionally with proper Thai academic language. Avoid colloquialisms.";
+                return "Use a FORMAL and ACADEMIC tone. Write professionally with proper Thai academic language. Avoid colloquialisms. Focus on accuracy and correctness.";
             case "professional":
                 return "Use a SERIOUS and PRECISE tone. Focus on accuracy and clarity. Be thorough and systematic in explanations.";
             case "mentor":
                 return "Use a WARM and ENCOURAGING tone like an older sibling teaching a younger one. Give motivation, use phrases like 'ง่ายมากเลย', 'พี่เชื่อว่าน้องทำได้', and be patient in explanations.";
+        }
+    };
+
+    const getExampleStyleInstruction = () => {
+        switch (exampleStyle) {
+            case "gradual":
+                return "Use 'PROGRESSIVE' examples. Start with a very easy one (basic concept), then a medium one (application), then a hard one (complex/twist). Scaffold the learning.";
+            case "real-world": // Utilizing 'real-world' key for 'Common Mistakes' to avoid changing type significantly if not needed, or better yet updating the type. Let's stick to valid keys or update type? Type is string.
+                return "Use examples that focus on 'COMMON STUDENT MISTAKES'. Show a problem, show the WRONG way students usually do it, explain WHY it is wrong, and then show the CORRECT method.";
+            case "instant": // Fallback
+                return "Use simple examples.";
+            case "funny":
+                return "Use funny examples.";
+            case "game":
+                return "Use game examples.";
         }
     };
 
@@ -235,19 +238,6 @@ IMPORTANT: Strictly follow these counts.`;
                 ? prev.filter(e => e !== element)
                 : [...prev, element]
         );
-    };
-
-    const getTeachingApproachInstruction = () => {
-        switch (teachingApproach) {
-            case "visual":
-                return "Use a VISUAL approach. Describe diagrams, charts, and visual representations. Use phrases like 'ลองนึกภาพ...', 'ดูจากแผนภาพ...'. Suggest visual aids the teacher should draw.";
-            case "conceptual":
-                return "Use a CONCEPTUAL approach. Focus on the 'WHY' before the 'HOW'. Explain the underlying principles and logic first, then show the practical application.";
-            case "procedural":
-                return "Use a PROCEDURAL/STEP-BY-STEP approach. Number each step clearly (ขั้นที่ 1, ขั้นที่ 2...). Make it easy to follow along.";
-            case "discovery":
-                return "Use a DISCOVERY/INQUIRY approach. Ask guiding questions, let students discover patterns. Use phrases like 'สังเกตว่า...', 'ลองคิดดูว่า...', 'เห็นความสัมพันธ์ไหม?'";
-        }
     };
 
     const getLessonDepthInstruction = () => {
@@ -272,9 +262,10 @@ IMPORTANT: Strictly follow these counts.`;
 
         const additionalText = additionalInstructions ? `\n\nADDITIONAL INSTRUCTIONS: ${additionalInstructions}` : "";
 
+        // Core instruction
         const baseInstruction = `You are an expert Thai mathematics teacher assistant. Create a JSON file for a teaching document about "${topicText}" for ${gradeText} students.${subTopicText}${methodInstruction}${additionalText}
 
-${contentType === "lesson" || contentType === "lecture" ? `WRITING TONE: ${getWritingToneInstruction()}` : `DIFFICULTY LEVEL: ${DIFFICULTIES.find(d => d.value === difficulty)?.label} - ${getDifficultyInstruction()}${getTeachingStyleInstruction()}`}
+${contentType === "lesson" || contentType === "lecture" ? `WRITING TONE: ${getWritingToneInstruction()}` : `${getDifficultyInstruction()}${getTeachingStyleInstruction()}`}
 
 Strictly output ONLY valid JSON code inside a markdown code block (\`\`\`json ... \`\`\`) for easy copying. Do not include any additional text outside the code block.
 The JSON must follow this exact typescript interface structure:
@@ -304,11 +295,16 @@ type Section = {
     options: string[]; // Array of 4 strings
     correctOption: number; // 0-3
     explanation: string; // Detailed explanation for the answer
+    difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
   }[];
 };
 
 Make sure to create exactly ${itemCount} multiple-choice questions with 4 options each.
-IMPORTANT: The 'explanation' field MUST contain a DETAILED STEP-BY-STEP reasoning/calculation for why the answer is correct and why others are wrong. Do not just say "Choice A is correct". Show the math or logic clearly.
+IMPORTANT: The 'explanation' field MUST be EXTREMELY DETAILED and EASY TO UNDERSTAND.
+   - Explain every single step of the calculation/logic clearly.
+   - MUST include a "Caution" (ข้อควรระวัง) or "Common Mistake" point in the explanation to warn students.
+   - Do not just say "A is correct". Show the full work.
+IMPORTANT: For EVERY question, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
 `;
         } else if (contentType === "exercise") {
             typeSpecificInstruction = `
@@ -325,9 +321,11 @@ type Section = {
 };
 
 Make sure to create exactly ${itemCount} practice questions.
-IMPORTANT: For EVERY item, provide a 'detailedSolution' field showing the step-by-step method to get the answer. This is mandatory.
+IMPORTANT: The 'detailedSolution' MUST be EXTREMELY DETAILED and EASY TO UNDERSTAND.
+   - Show the full STEP-BY-STEP calculation method.
+   - MUST include a "Caution" (ข้อควรระวัง) or "Key Trick" to help students solve it faster or avoid mistakes.
 IMPORTANT: For EVERY item, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
-IMPORTANT: Do NOT include 'spaceForWork' or 'lines'. We will display the solution directly.
+IMPORTANT: Do NOT include 'spaceForWork' or 'lines'.
 `;
         } else if (contentType === "lecture") {
             typeSpecificInstruction = `
@@ -337,6 +335,7 @@ type Section = {
   title: string;
   content: string; // Markdown supported content with LaTeX math support
   keyPoints: string[]; // Summary list
+  difficulty?: string;
 };
 
 WRITING TONE: ${getWritingToneInstruction()}
@@ -344,10 +343,6 @@ ${getContentElementsInstruction()}
 
 Create a comprehensive lecture content with good structure (Headings, bullet points).
 Use LaTeX notation for mathematical formulas (e.g., $x^2$ for inline, $$\\frac{a}{b}$$ for display).
-IMPORTANT: Start the 'content' with **3 Options** for a "HOOK / SLOGAN" (คำโปรยที่หยุดคนอ่าน).
-Label them clearly (e.g., Option 1, 2, 3).
-Each must be punchy, catchy, and act like a "Section Hero" slogan. NOT a boring formal sentence.
-Examples: "Unlock the secret of X", "Master X in 5 minutes", "Why 90% of students fail this (and how you won't)".
 `;
         } else if (contentType === "lesson") {
             typeSpecificInstruction = `
@@ -363,14 +358,18 @@ type Section = {
   keyTakeaways: string[]; // Main points to remember
 };
 
-TEACHING APPROACH: ${getTeachingApproachInstruction()}
+
 
 LESSON DEPTH: ${getLessonDepthInstruction()}
 
-${includeExamples ? `IMPORTANT: Include exactly ${exampleCount} WORKED EXAMPLES with detailed step-by-step solutions. Show every step clearly.` : ""}
+${includeExamples
+                    ? `IMPORTANT: Include exactly ${exampleCount} WORKED EXAMPLES.
+    STYLE: ${getExampleStyleInstruction()}
+    Format: Show the "Problem" followed by a "Solution" with detailed steps.`
+                    : ""}
 ${includePractice ? `IMPORTANT: Include exactly ${practiceCount} PRACTICE PROBLEMS at the end.
 CRITICAL: These questions must be derived from COMMON STUDENT MISTAKES (analyze where students fail and turn that into a question).
-CRITICAL: Provide a 'solution' for every problem so students can check their answers immediately.` : ""}
+CRITICAL: You MUST provide a 'solution' for EVERY SINGLE problem. The solution must be DETAILED, showing the STEP-BY-STEP calculation method, not just the final answer.` : ""}
 
 Structure the lesson as follows:
 1. List any PREREQUISITES students need (Skip formal objectives)
@@ -378,24 +377,13 @@ Structure the lesson as follows:
 3. Use plenty of EXAMPLES throughout
 4. End with KEY TAKEAWAYS
 
-IMPORTANT: Start the 'content' with **3 Options** for a "HOOK / SLOGAN" (คำโปรยที่หยุดคนอ่าน).
-Label them clearly (e.g., Option 1, 2, 3).
-Each must be punchy, catchy, and act like a "Section Hero" slogan. NOT a boring formal sentence.
-Examples: "Unlock the secret of X", "Master X in 5 minutes", "Why 90% of students fail this (and how you won't)".
+IMPORTANT: Start the lecture immediately with the core content. Do not use any "Hook" or "Slogan" options.
+
+
 `;
         }
 
-        // Add Content Add-ons Logic (Global for all types)
-        const contentAddonInstruction = `
-${selectedAddOns.includes('common-mistakes') ? "IMPORTANT: Include a distinguished section (or field in JSON) for '⚠️ COMMON STUDENT MISTAKES'. Explain what students often get wrong and how to avoid it." : ""}
-${selectedAddOns.includes('pro-tips') ? "IMPORTANT: Include a section (or field) for '💡 PRO TIPS & TRICKS'. Share shortcuts, mnemonics, or easier ways to solve problems." : ""}
-${selectedAddOns.includes('real-world') ? "IMPORTANT: Include a section (or field) for '🌍 REAL-WORLD APPLICATION'. Explain how this math concept is used in daily life or real careers." : ""}
-${selectedAddOns.includes('advanced-insight') ? "IMPORTANT: Include a section (or field) for '🔍 DEEP DIVE / INSIGHT'. Share interesting historical facts, advanced connections, or 'did you know?' facts." : ""}
-${selectedAddOns.includes('concept-map') ? "IMPORTANT: Include a text-based '🗺️ CONCEPT MAP' description showing how this topic connects to previous and future topics." : ""}
-${customAddOn ? `IMPORTANT: Include a section for "${customAddOn}". Content should be relevant and valuable to students.` : ""}
-`;
-
-        const prompt = `${baseInstruction}${typeSpecificInstruction}${contentAddonInstruction}
+        const prompt = `${baseInstruction}${typeSpecificInstruction}
 Example JSON Structure:
         {
             "documentMetadata": {
@@ -483,7 +471,7 @@ Example JSON Structure:
                                         <button
                                             key={sem.value}
                                             onClick={() => setSemester(sem.value)}
-                                            className={`p - 3 rounded - lg text - center transition border font - medium ${semester === sem.value
+                                            className={`p-3 rounded-lg text-center transition border font-medium ${semester === sem.value
                                                 ? "bg-black text-white border-black"
                                                 : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200"
                                                 } `}
@@ -601,7 +589,6 @@ Example JSON Structure:
                         </div>
 
                         {/* Section: Creation Method (Reference vs Freestyle) */}
-                        {/* Section: Creation Method (Reference vs Freestyle) */}
                         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
                             <h3 className="font-bold text-black text-lg flex items-center gap-2">
                                 📎 แหล่งข้อมูลอ้างอิง
@@ -647,7 +634,6 @@ Example JSON Structure:
                             </div>
                         </div>
 
-                        {/* Section: Content Type */}
                         {/* Section: Content Type */}
                         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
                             <h3 className="font-bold text-black text-lg flex items-center gap-2">
@@ -801,48 +787,21 @@ Example JSON Structure:
                                         )}
                                     </div>
 
-                                    <div className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition">
-                                        <label className="flex items-center gap-3 cursor-pointer mb-2">
-                                            <input
-                                                type="checkbox"
-                                                checked={includePractice}
-                                                onChange={(e) => setIncludePractice(e.target.checked)}
-                                                className="w-5 h-5 accent-black"
-                                            />
-                                            <div>
-                                                <span className="font-bold">📝 ใส่แบบฝึกหัดท้ายบท</span>
-                                                <p className="text-xs text-gray-500">ให้นักเรียนลองทำเอง</p>
-                                            </div>
-                                        </label>
-                                        {includePractice && (
-                                            <div className="ml-8 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                                <span className="text-sm font-bold text-gray-600">จำนวน:</span>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="20"
-                                                    value={practiceCount}
-                                                    onChange={(e) => setPracticeCount(parseInt(e.target.value) || 1)}
-                                                    className="w-16 border border-gray-300 rounded px-2 py-1 text-center font-bold text-sm focus:ring-2 focus:ring-black outline-none"
-                                                />
-                                                <span className="text-sm text-gray-500">ข้อ</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                    {/* Practice Problems Section Removed */}
                                 </div>
 
                                 {/* Example Style Selector */}
                                 {includeExamples && (
                                     <div className="pt-4 border-t border-gray-300 space-y-3">
                                         <label className="block text-sm font-bold text-gray-700">
-                                            🎨 รูปแบบการยกตัวอย่าง
+                                            🎓 รูปแบบตัวอย่างประกอบเนื้อหา (Worked Examples)
                                         </label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {EXAMPLE_STYLES.map(style => (
                                                 <button
                                                     key={style.value}
                                                     onClick={() => setExampleStyle(style.value)}
-                                                    className={`p - 3 rounded - lg text - left transition border ${exampleStyle === style.value
+                                                    className={`p-3 rounded-lg text-left transition border ${exampleStyle === style.value
                                                         ? "bg-purple-600 text-white border-purple-600"
                                                         : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200"
                                                         } `}
@@ -851,7 +810,7 @@ Example JSON Structure:
                                                         <span>{style.icon}</span>
                                                         <span>{style.label}</span>
                                                     </div>
-                                                    <p className={`text - xs mt - 1 ${exampleStyle === style.value ? "text-purple-200" : "text-gray-500"} `}>
+                                                    <p className={`text-xs mt-1 ${exampleStyle === style.value ? "text-purple-200" : "text-gray-500"} `}>
                                                         {style.description}
                                                     </p>
                                                 </button>
@@ -874,7 +833,7 @@ Example JSON Structure:
                                         <button
                                             key={element.value}
                                             onClick={() => toggleContentElement(element.value)}
-                                            className={`px - 4 py - 2 rounded - full text - sm transition border flex items - center gap - 2 ${contentElements.includes(element.value)
+                                            className={`px-4 py-2 rounded-full text-sm transition border flex items-center gap-2 ${contentElements.includes(element.value)
                                                 ? "bg-black text-white border-black font-bold"
                                                 : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200 font-medium"
                                                 } `}
@@ -887,106 +846,88 @@ Example JSON Structure:
                             </div>
                         )}
 
-                        {/* Section: Content Add-ons - For Lesson & Lecture */}
-                        {/* Section: Content Add-ons - For Lesson & Lecture */}
-                        {((contentType as ContentType) === "lesson" || (contentType as ContentType) === "lecture") && (
-                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
-                                <h3 className="font-bold text-black text-lg flex items-center gap-2">
-                                    ✨ ส่วนประกอบเพิ่มเติม
-                                </h3>
-                                <div className="grid grid-cols-1 gap-3">
-                                    {CONTENT_ADDONS.map(addon => (
-                                        <label key={addon.id} className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-gray-100 bg-white hover:bg-purple-50/50 hover:border-purple-200 transition min-h-[60px] group shadow-sm">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedAddOns.includes(addon.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedAddOns([...selectedAddOns, addon.id]);
-                                                    } else {
-                                                        setSelectedAddOns(selectedAddOns.filter(id => id !== addon.id));
-                                                    }
-                                                }}
-                                                className="w-5 h-5 accent-purple-600 shrink-0 rounded bg-gray-100 border-gray-300"
-                                            />
-                                            <div>
-                                                <span className="font-bold block text-gray-900 group-hover:text-purple-900 transition-colors">{addon.label}</span>
-                                                <span className="text-xs text-gray-500 group-hover:text-purple-700/70 transition-colors">{addon.description}</span>
-                                            </div>
-                                        </label>
-                                    ))}
-
-                                    {/* Custom Add-on Input */}
-                                    <div className="mt-2">
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">หัวข้ออื่นๆ (ระบุเอง)</label>
-                                        <input
-                                            type="text"
-                                            value={customAddOn}
-                                            onChange={(e) => setCustomAddOn(e.target.value)}
-                                            placeholder="เช่น คำถามกระตุ้นความคิด, แบบทดสอบย่อย..."
-                                            className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-purple-500 outline-none"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Section: Difficulty - Only for exam/exercise */}
                         {(contentType === "exam" || contentType === "exercise") && (
                             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
                                 <h3 className="font-bold text-black text-lg flex items-center gap-2">
                                     🎚️ ระดับความยาก
                                 </h3>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-3">
                                     {DIFFICULTIES.map(diff => (
                                         <button
                                             key={diff.value}
                                             onClick={() => setDifficulty(diff.value)}
-                                            className={`p-3 rounded-xl text-left transition-all border-2 ${difficulty === diff.value
-                                                ? "bg-purple-50 border-purple-500 shadow-sm"
+                                            className={`w-full p-4 rounded-xl text-left transition-all border-2 flex items-center gap-4 group ${difficulty === diff.value
+                                                ? "bg-purple-50 border-purple-500 shadow-md ring-1 ring-purple-500/20"
                                                 : "bg-white hover:bg-gray-50 border-gray-100 hover:border-gray-200"
                                                 } `}
                                         >
-                                            <div className="flex items-center gap-2 font-bold text-gray-800">
-                                                <span>{diff.icon}</span>
-                                                <span>{diff.label}</span>
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0 transition-colors ${difficulty === diff.value ? 'bg-white' : 'bg-gray-100 group-hover:bg-white'}`}>
+                                                {diff.icon}
                                             </div>
-                                            <p className={`text-xs mt-1 ${difficulty === diff.value ? "text-purple-700" : "text-gray-400"} `}>
-                                                {diff.description}
-                                            </p>
+                                            <div>
+                                                <div className={`font-bold text-base mb-0.5 ${difficulty === diff.value ? "text-purple-900" : "text-gray-800"}`}>
+                                                    {diff.label}
+                                                </div>
+                                                <p className={`text-sm ${difficulty === diff.value ? "text-purple-700" : "text-gray-500"} `}>
+                                                    {diff.description}
+                                                </p>
+                                            </div>
+                                            {difficulty === diff.value && (
+                                                <div className="ml-auto text-purple-600">
+                                                    <Check className="w-6 h-6" />
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
 
                                 {/* Mixed Difficulty Controls */}
                                 {difficulty === "mixed" && (
-                                    <div className="bg-white p-4 rounded-lg border border-gray-200 mt-2 space-y-4">
-                                        <p className="text-sm font-bold text-gray-700">กำหนดจำนวนข้อแต่ละระดับ (รวม: {itemCount} ข้อ)</p>
+                                    <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 mt-4 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <p className="font-bold text-gray-800 flex items-center gap-2">
+                                                <span className="text-xl">⚖️</span>
+                                                กำหนดจำนวนข้อแต่ละระดับ
+                                            </p>
+                                            <div className="bg-white px-3 py-1 rounded-full border border-gray-200 text-sm font-mono">
+                                                รวม: <span className="font-bold text-black">{itemCount}</span> ข้อ
+                                            </div>
+                                        </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-3">
                                             {[
-                                                { id: 'basic', label: 'ง่าย 🟢', color: 'bg-green-100 text-green-800' },
-                                                { id: 'intermediate', label: 'ปานกลาง 🟡', color: 'bg-yellow-100 text-yellow-800' },
-                                                { id: 'advanced', label: 'ยาก 🔴', color: 'bg-red-100 text-red-800' },
-                                                { id: 'wordProblem', label: 'โจทย์ปัญหา 🔥', color: 'bg-orange-100 text-orange-800' }
+                                                { id: 'basic', label: 'ง่าย', icon: '🟢', desc: 'เน้นความจำ', color: 'bg-green-100 text-green-800 border-green-200' },
+                                                { id: 'intermediate', label: 'ปานกลาง', icon: '🟡', desc: 'เน้นการประยุกต์', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+                                                { id: 'advanced', label: 'ยาก', icon: '🔴', desc: 'วิเคราะห์/ซับซ้อน', color: 'bg-red-100 text-red-800 border-red-200' },
+                                                { id: 'wordProblem', label: 'โจทย์ปัญหา', icon: '🔥', desc: 'สถานการณ์จริง', color: 'bg-orange-100 text-orange-800 border-orange-200' }
                                             ].map((type) => (
-                                                <div key={type.id} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-200">
-                                                    <span className={`text - xs font - bold px - 2 py - 1 rounded ${type.color} `}>{type.label}</span>
-                                                    <div className="flex items-center gap-2">
+                                                <div key={type.id} className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm border ${type.color}`}>
+                                                            {type.icon}
+                                                        </span>
+                                                        <div>
+                                                            <div className="font-bold text-gray-800">{type.label}</div>
+                                                            <div className="text-xs text-gray-400">{type.desc}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-gray-100">
                                                         <button
-                                                            onClick={() => setDifficultyDistribution(prev => ({ ...prev, [type.id]: Math.max(0, (prev as any)[type.id] - 1) }))}
-                                                            className="w-6 h-6 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-100 text-gray-600 font-bold"
+                                                            onClick={() => setDifficultyDistribution(prev => ({ ...prev, [type.id]: Math.max(0, (prev as Record<string, number>)[type.id] - 1) }))}
+                                                            className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-md hover:bg-gray-50 text-gray-600 transition shadow-sm active:scale-95"
                                                         >
-                                                            -
+                                                            <span className="text-lg font-bold mb-0.5">-</span>
                                                         </button>
-                                                        <span className="w-4 text-center text-sm font-bold text-black">
-                                                            {(difficultyDistribution as any)[type.id]}
+                                                        <span className="w-8 text-center font-bold text-lg text-black font-mono">
+                                                            {(difficultyDistribution as Record<string, number>)[type.id]}
                                                         </span>
                                                         <button
-                                                            onClick={() => setDifficultyDistribution(prev => ({ ...prev, [type.id]: (prev as any)[type.id] + 1 }))}
-                                                            className="w-6 h-6 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-100 text-gray-600 font-bold"
+                                                            onClick={() => setDifficultyDistribution(prev => ({ ...prev, [type.id]: (prev as Record<string, number>)[type.id] + 1 }))}
+                                                            className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-md hover:bg-gray-50 text-black transition shadow-sm active:scale-95"
                                                         >
-                                                            +
+                                                            <span className="text-lg font-bold mb-0.5">+</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -997,34 +938,8 @@ Example JSON Structure:
                             </div>
                         )}
 
-                        {/* Section: Teaching Style - Only for exam/exercise */}
-                        {(contentType === "exam" || contentType === "exercise") && (
-                            <div className="bg-[#F7F7F5] p-5 rounded-xl border border-gray-200 space-y-4">
-                                <h3 className="font-bold text-black text-lg flex items-center gap-2">
-                                    🎨 สไตล์การสอน
-                                </h3>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {TEACHING_STYLES.map(style => (
-                                        <button
-                                            key={style.value}
-                                            onClick={() => setTeachingStyle(style.value)}
-                                            className={`p - 3 rounded - lg text - left transition border ${teachingStyle === style.value
-                                                ? "bg-black text-white border-black"
-                                                : "bg-white hover:bg-gray-50 text-gray-700 border-gray-200"
-                                                } `}
-                                        >
-                                            <div className="flex items-center gap-2 font-bold">
-                                                <span>{style.icon}</span>
-                                                <span>{style.label}</span>
-                                            </div>
-                                            <p className={`text - xs mt - 1 ${teachingStyle === style.value ? "text-gray-300" : "text-gray-500"} `}>
-                                                {style.description}
-                                            </p>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+
+
 
                         {/* Section: Quantity - Only for exam/exercise */}
                         {(contentType === "exam" || contentType === "exercise") && (
@@ -1040,7 +955,7 @@ Example JSON Structure:
                                         value={itemCount}
                                         onChange={(e) => setItemCount(parseInt(e.target.value) || 0)}
                                         disabled={difficulty === 'mixed'}
-                                        className={`flex - 1 h - 3 bg - gray - 200 rounded - lg appearance - none accent - black ${difficulty === 'mixed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} `}
+                                        className={`flex-1 h-3 bg-gray-200 rounded-lg appearance-none accent-black ${difficulty === 'mixed' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} `}
                                     />
                                     <span className="w-16 text-right font-mono text-2xl font-bold text-black">{itemCount}</span>
                                 </div>
@@ -1054,7 +969,7 @@ Example JSON Structure:
                             </h3>
                             <div className="space-y-2">
                                 <label className="block text-sm text-gray-600">
-                                    ระบุความต้องการพิเศษ เช่น "อิงตามแนว สสวท.", "ขอโจทย์คล้ายๆ กับแนวข้อสอบเตรียมอุดม"
+                                    ระบุความต้องการพิเศษ เช่น 'อิงตามแนว สสวท.', 'ขอโจทย์คล้ายๆ กับแนวข้อสอบเตรียมอุดม'
                                 </label>
                                 <textarea
                                     value={additionalInstructions}
@@ -1137,7 +1052,7 @@ Example JSON Structure:
                         </div>
                     </div>
                 </div>
-            </div >
+            </div>
         </div >
     );
 }

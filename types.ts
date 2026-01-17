@@ -129,6 +129,7 @@ export interface ExamQuestion {
     options: string[];
     correctOption: number; // 0-based index
     explanation?: string;
+    difficulty?: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา';
 }
 
 export interface ExamSection extends BaseSection {
@@ -175,15 +176,15 @@ export interface HeaderFooterConfig {
 
 export const DEFAULT_HEADER_FOOTER_CONFIG: HeaderFooterConfig = {
     fontFamily: 'sarabun',
-    headingFont: 'sarabun',
+    headingFont: 'sarabun', // Default heading font
     header: {
-        enabled: true,
+        enabled: false,
         showTitle: true,
         showDate: true,
         showInstructor: true,
     },
     footer: {
-        enabled: true,
+        enabled: false,
         showPageNumber: true,
         centerText: "Teaching Docs Generator",
     },

@@ -33,12 +33,20 @@ export const ImportJsonModal = ({ isOpen, onClose, onImport, currentFolderId }: 
                 .trim();
 
             // --- AUTO-FIX COMMON AI ERRORS ---
-            // 1. Remove Citation tags (e.g. [cite_start], [cite_end])
-            cleanJson = cleanJson.replace(/\[cite_[^\]]*\]/g, '');
+            // 1. Remove Citation Artifacts (GLOBAL REMOVAL)
+            // Remove [cite:...] patterns indiscriminately to prevent syntax errors
+            cleanJson = cleanJson
+                .replace(/\[cite\s*[:_]?\s*\d+.*?\]/gi, '')
+                .replace(/\[cite.*?\]/gi, '')
+                .replace(/\[source.*?\]/gi, '')
+                .replace(/【\d+:\d+†source】/g, '');
 
-            // 2. Fix Single Quotes for Keys (e.g. 'problem': -> "problem":)
-            // This is a common Python/JS-like format AI sometimes outputs
+            // 2. Fix Common AI JSON Malformations
+            // 2.1 Fix Single Quoted Keys (e.g., 'key': -> "key":)
             cleanJson = cleanJson.replace(/'([^']+)'\s*:/g, '"$1":');
+
+            // 2.2 Fix Unquoted Keys (e.g., key: -> "key":) - simple cases only
+            cleanJson = cleanJson.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
 
             // 3. Fix Trailing Commas (e.g. { a: 1, } -> { a: 1 })
             cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');

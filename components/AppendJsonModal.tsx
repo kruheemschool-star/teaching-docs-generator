@@ -23,12 +23,33 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
                 return;
             }
 
-            // Clean Markdown
-            const cleanJson = jsonContent
+            // --- ROBUST CLEANING STRATEGY ---
+
+            // 1. Remove Markdown Code Blocks
+            let cleanJson = jsonContent
                 .replace(/^```json\s*/g, '')
                 .replace(/^```\s*/g, '')
                 .replace(/\s*```$/g, '')
                 .trim();
+
+            // 2. Remove Citation Artifacts (GLOBAL REMOVAL)
+            // Remove [cite:...] patterns indiscriminately to prevent syntax errors
+            cleanJson = cleanJson
+                .replace(/\[cite\s*[:_]?\s*\d+.*?\]/gi, '')
+                .replace(/\[cite.*?\]/gi, '')
+                .replace(/\[source.*?\]/gi, '')
+                .replace(/【\d+:\d+†source】/g, '');
+
+            // 3. Fix Common AI JSON Malformations
+            // 3.1 Fix Single Quoted Keys (e.g., 'key': -> "key":)
+            cleanJson = cleanJson.replace(/'([^']+)'\s*:/g, '"$1":');
+
+            // 3.2 Fix Unquoted Keys (e.g., key: -> "key":) - simple cases only
+            // Caution: Avoid replacing protocol parts like http:
+            cleanJson = cleanJson.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+
+            // 3.3 Fix Trailing Commas (e.g., { a:1, } -> { a:1 })
+            cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
 
             let data = JSON.parse(cleanJson);
             let sectionsToAppend: Section[] = [];
@@ -37,21 +58,19 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
             if (data.documentMetadata && data.sections) {
                 sectionsToAppend = data.sections;
             }
-            // Case 2: Array of Sections (most common for "generate exercises")
+            // Case 2: Array of Sections
             else if (Array.isArray(data)) {
-                // Verify items are likely sections (or assume they are)
                 sectionsToAppend = data;
             }
             // Case 3: Single Section Object
             else if (data.type && (data.type === 'lecture' || data.type === 'exercise' || data.type === 'exam' || data.type === 'lesson')) {
                 sectionsToAppend = [data];
             }
-            // Case 4: AI forgot structure, just title and content? 
+            // Case 4: AI forgot structure, just title and content
             else if (data.title && data.content) {
-                // Assume lecture or lesson
                 sectionsToAppend = [{
                     id: crypto.randomUUID(),
-                    type: 'lecture', // Safe default
+                    type: 'lecture',
                     title: data.title,
                     content: data.content
                 }];

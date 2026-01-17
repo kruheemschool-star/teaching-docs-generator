@@ -233,7 +233,7 @@ const AutoResizeTextarea = ({
 // 2. BLOCK COMPONENTS
 // ==========================================
 
-const TextBlockRenderer = ({ block, editing, onUpdate }: { block: TextBlock, editing: boolean, onUpdate: (content: string) => void }) => {
+const TextBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: { block: TextBlock, editing: boolean, onUpdate: (content: string) => void, fontSizeLevel?: number }) => {
     if (editing) {
         return (
             <AutoResizeTextarea
@@ -245,9 +245,26 @@ const TextBlockRenderer = ({ block, editing, onUpdate }: { block: TextBlock, edi
             />
         );
     }
+
+    // Dynamic Scaled Classes
+    const proseClass = fontSizeLevel === 0 ? 'prose-xl' : fontSizeLevel === 1 ? 'prose-2xl' : 'prose-2xl text-2xl'; // XL -> 2XL -> Custom 2XL+
+    const h1Class = fontSizeLevel === 0 ? 'text-4xl' : fontSizeLevel === 1 ? 'text-5xl' : 'text-6xl';
+    const h2Class = fontSizeLevel === 0 ? 'text-3xl' : fontSizeLevel === 1 ? 'text-4xl' : 'text-5xl';
+    const h3Class = fontSizeLevel === 0 ? 'text-2xl' : fontSizeLevel === 1 ? 'text-3xl' : 'text-4xl';
+
     return (
-        <div className="prose prose-lg max-w-none text-gray-800">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+        <div className={`prose ${proseClass} max-w-none text-gray-800`}>
+            <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                    h1: ({ node, ...props }) => <h1 className={`${h1Class} font-bold mt-8 mb-6 text-black border-b-2 border-black pb-3`} {...props} />,
+                    h2: ({ node, ...props }) => <h2 className={`${h2Class} font-bold mt-6 mb-4 text-black flex items-center gap-2`} {...props} />,
+                    h3: ({ node, ...props }) => <h3 className={`${h3Class} font-bold mt-5 mb-3 text-gray-800`} {...props} />,
+                    p: ({ node, ...props }) => <p className="mb-4 text-gray-800 leading-loose" {...props} />,
+                    li: ({ node, ...props }) => <li className="mb-2 text-gray-800" {...props} />
+                }}
+            >
                 {block.content}
             </ReactMarkdown>
         </div>
@@ -279,16 +296,18 @@ const SpacerBlockRenderer = ({ block, editing, onUpdate }: { block: SpacerBlock,
     );
 };
 
-const CalloutBlockRenderer = ({ block, editing, onUpdate }: { block: CalloutBlock, editing: boolean, onUpdate: (updates: Partial<CalloutBlock>) => void }) => {
+const CalloutBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: { block: CalloutBlock, editing: boolean, onUpdate: (updates: Partial<CalloutBlock>) => void, fontSizeLevel?: number }) => {
+    // Notion-style minimalist: All are gray backgrounds, distinguished by icon or subtle left border
     const colorClasses = {
-        blue: 'bg-blue-50 border-blue-200 text-blue-900',
-        yellow: 'bg-yellow-50 border-yellow-200 text-yellow-900',
-        green: 'bg-green-50 border-green-200 text-green-900',
-        red: 'bg-red-50 border-red-200 text-red-900',
-        purple: 'bg-purple-50 border-purple-200 text-purple-900',
+        blue: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800',
+        yellow: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800',
+        green: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800',
+        red: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800',
+        purple: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800',
+        gray: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800', // Default
     };
 
-    const theme = colorClasses[block.color || 'blue'];
+    const theme = colorClasses[block.color || 'blue'] || colorClasses['gray'];
 
     if (editing) {
         return (
@@ -329,15 +348,19 @@ const CalloutBlockRenderer = ({ block, editing, onUpdate }: { block: CalloutBloc
         );
     }
 
+    // Dynamic Size
+    const proseClass = fontSizeLevel === 0 ? 'prose-lg' : fontSizeLevel === 1 ? 'prose-xl' : 'prose-2xl';
+    const titleClass = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl';
+
     return (
-        <div className={`p-4 rounded-lg border ${theme} my-4 break-inside-avoid print:border`}>
+        <div className={`pl-4 py-3 pr-4 rounded-r-lg ${theme} my-4 break-inside-avoid print:border transition-all hover:bg-gray-100/50`}>
             {block.title && (
-                <h4 className="font-bold text-xl mb-3 flex items-center gap-2">
-                    {block.icon && <span className="text-2xl">{block.icon}</span>}
-                    {block.title}
+                <h4 className={`font-bold ${titleClass} mb-2 flex items-center gap-3 text-gray-900`}>
+                    {block.icon && <span className="text-xl shrink-0">{block.icon}</span>}
+                    <span>{block.title}</span>
                 </h4>
             )}
-            <div className="prose prose-lg max-w-none">
+            <div className={`prose ${proseClass} max-w-none text-gray-700 leading-relaxed ml-1`}>
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                     {block.content}
                 </ReactMarkdown>
@@ -346,7 +369,7 @@ const CalloutBlockRenderer = ({ block, editing, onUpdate }: { block: CalloutBloc
     );
 };
 
-const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false }: { block: ExampleBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean }) => {
+const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, fontSizeLevel = 0 }: { block: ExampleBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean, fontSizeLevel?: number }) => {
     if (editing) {
         return (
             <div className="p-5 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 space-y-4">
@@ -377,24 +400,28 @@ const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false }:
         );
     }
 
+    // Dynamic Sizing
+    const textClass = fontSizeLevel === 0 ? 'text-xl' : fontSizeLevel === 1 ? 'text-2xl' : 'text-3xl';
+    const subTextClass = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl';
+
     return (
         <div className="my-6 border border-gray-200 rounded-xl overflow-hidden shadow-sm break-inside-avoid example-item">
             <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex justify-between items-center">
                 <span className="font-bold text-gray-700">📌 ตัวอย่าง</span>
             </div>
             <div className="p-5 bg-white">
-                <div className="font-medium text-xl mb-4 text-gray-900">
+                <div className={`font-medium ${textClass} mb-4 text-gray-900`}>
                     <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                         {block.data.problem}
                     </ReactMarkdown>
                 </div>
                 <div className={`pl-4 border-l-4 rounded-r-lg p-4 transition-all
                     ${showAnswers
-                        ? 'border-green-400 bg-green-50/50'
+                        ? 'border-gray-300 bg-gray-50'
                         : 'border-transparent text-invisible invisible-box bg-transparent'
                     }`}>
-                    <div className={`font-bold text-lg mb-2 ${showAnswers ? 'text-green-800' : 'text-invisible'}`}>วิธีทำ</div>
-                    <div className={`section-content text-lg ${showAnswers ? 'text-gray-800' : 'text-invisible'}`}>
+                    <div className={`font-bold ${subTextClass} mb-2 ${showAnswers ? 'text-gray-700' : 'text-invisible'}`}>วิธีทำ</div>
+                    <div className={`section-content ${subTextClass} ${showAnswers ? 'text-gray-600' : 'text-invisible'}`}>
                         <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                             {block.data.solution}
                         </ReactMarkdown>
@@ -405,7 +432,7 @@ const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false }:
     );
 };
 
-const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false }: { block: PracticeBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean }) => {
+const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, fontSizeLevel = 0 }: { block: PracticeBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean, fontSizeLevel?: number }) => {
     if (editing) {
         return (
             <div className="p-5 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/20 space-y-4">
@@ -436,24 +463,28 @@ const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false }
         );
     }
 
+    // Dynamic Size
+    const textClass = fontSizeLevel === 0 ? 'text-xl' : fontSizeLevel === 1 ? 'text-2xl' : 'text-3xl';
+    const subTextClass = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl';
+
     return (
         <div className="my-6 border border-purple-100 rounded-xl overflow-hidden shadow-sm break-inside-avoid practice-item">
             <div className="bg-purple-50 px-5 py-3 border-b border-purple-100 flex justify-between items-center">
                 <span className="font-bold text-purple-900">✍️ ลองทำดู</span>
             </div>
             <div className="p-5 bg-white">
-                <div className="font-medium text-xl mb-4 text-gray-900">
+                <div className={`font-medium ${textClass} mb-4 text-gray-900`}>
                     <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                         {block.data.problem}
                     </ReactMarkdown>
                 </div>
                 <div className={`pl-4 border-l-4 rounded-r-lg p-4 transition-all
                     ${showAnswers
-                        ? 'border-purple-400 bg-purple-50/50'
+                        ? 'border-gray-300 bg-gray-50'
                         : 'border-transparent text-invisible invisible-box bg-transparent'
                     }`}>
-                    <div className={`font-bold text-lg mb-2 ${showAnswers ? 'text-purple-800' : 'text-invisible'}`}>เฉลย</div>
-                    <div className={`section-content text-lg ${showAnswers ? 'text-gray-800' : 'text-invisible'}`}>
+                    <div className={`font-bold ${subTextClass} mb-2 ${showAnswers ? 'text-gray-700' : 'text-invisible'}`}>เฉลย</div>
+                    <div className={`section-content ${subTextClass} ${showAnswers ? 'text-gray-600' : 'text-invisible'}`}>
                         <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                             {block.data.solution}
                         </ReactMarkdown>
@@ -465,7 +496,7 @@ const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false }
 };
 
 // ImageBlockRenderer ... (unchanged)
-const ImageBlockRenderer = ({ block, editing, onUpdate }: { block: ImageBlock, editing: boolean, onUpdate: (updates: Partial<ImageBlock>) => void }) => {
+const ImageBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: { block: ImageBlock, editing: boolean, onUpdate: (updates: Partial<ImageBlock>) => void, fontSizeLevel?: number }) => {
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -551,7 +582,7 @@ const ImageBlockRenderer = ({ block, editing, onUpdate }: { block: ImageBlock, e
                 style={{ width: block.width ? `${block.width}%` : '100%' }}
             />
             {block.caption && (
-                <p className="text-center text-sm text-gray-500 mt-2 italic">{block.caption}</p>
+                <p className={`text-center mt-2 italic text-gray-500 ${fontSizeLevel === 0 ? 'text-sm' : fontSizeLevel === 1 ? 'text-base' : 'text-lg'}`}>{block.caption}</p>
             )}
         </div>
     );
@@ -581,9 +612,8 @@ interface BlockEditorProps {
     isEditing: boolean;
     showAnswers?: boolean;
     onChange: (newBlocks: AnyBlock[]) => void;
-}
-
-export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks, isEditing, showAnswers = false, onChange }) => {
+    fontSizeLevel?: number; // 0=M, 1=L, 2=XL
+}export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks, isEditing, showAnswers = false, onChange, fontSizeLevel = 0 }) => {
     const [blocks, setBlocks] = useState<AnyBlock[]>(initialBlocks);
 
     useEffect(() => {
@@ -705,6 +735,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks,
                                 block={block as TextBlock}
                                 editing={isEditing}
                                 onUpdate={(content) => updateBlock(block.id, { content })}
+                                fontSizeLevel={fontSizeLevel}
                             />
                         )}
                         {block.type === 'spacer' && (
@@ -719,6 +750,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks,
                                 block={block as CalloutBlock}
                                 editing={isEditing}
                                 onUpdate={(updates) => updateBlock(block.id, updates)}
+                                fontSizeLevel={fontSizeLevel}
                             />
                         )}
                         {block.type === 'example' && (
@@ -727,6 +759,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks,
                                 editing={isEditing}
                                 showAnswers={showAnswers}
                                 onUpdate={(data) => updateBlockData(block.id, data)}
+                                fontSizeLevel={fontSizeLevel}
                             />
                         )}
                         {block.type === 'image' && (
@@ -734,6 +767,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks,
                                 block={block as ImageBlock}
                                 editing={isEditing}
                                 onUpdate={(updates) => updateBlock(block.id, updates)}
+                                fontSizeLevel={fontSizeLevel}
                             />
                         )}
                         {block.type === 'pageBreak' && (
@@ -752,6 +786,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks,
                                 editing={isEditing}
                                 showAnswers={showAnswers}
                                 onUpdate={(data) => updateBlockData(block.id, data)}
+                                fontSizeLevel={fontSizeLevel}
                             />
                         )}
                     </div>

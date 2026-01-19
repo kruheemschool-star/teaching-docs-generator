@@ -37,6 +37,7 @@ export default function Dashboard() {
 
   const [filterClass, setFilterClass] = useState<string>("all");
   const [filterTerm, setFilterTerm] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [moveModal, setMoveModal] = useState<{ isOpen: boolean; docId: string | null }>({ isOpen: false, docId: null });
@@ -163,6 +164,10 @@ export default function Dashboard() {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
 
     return inCurrentFolder && matchesClass && matchesTerm && matchesSearch;
+  }).sort((a, b) => {
+    const dateA = new Date(a.updatedAt).getTime();
+    const dateB = new Date(b.updatedAt).getTime();
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
   const getCurrentFolder = () => folders.find(f => f.id === currentFolderId);
@@ -198,24 +203,18 @@ export default function Dashboard() {
             </h2>
             <div className="flex gap-3">
               <button
-                onClick={() => setIsImportModalOpen(true)}
-                className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-lg font-medium transition flex items-center gap-2"
-              >
-                <FileJson className="w-5 h-5" />
-                <span className="hidden sm:inline">นำเข้า Code</span>
-              </button>
-              <button
                 onClick={handleCreateFolder}
-                className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-lg font-medium transition flex items-center gap-2"
+                className="px-4 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium transition flex items-center gap-2"
               >
                 <FolderPlus className="w-5 h-5" />
                 <span className="hidden sm:inline">สร้างโฟลเดอร์</span>
               </button>
               <button
-                onClick={handleCreateNew}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-lg shadow-blue-500/20"
+                onClick={() => setIsImportModalOpen(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/30 flex items-center gap-2 transform hover:scale-105 active:scale-95"
               >
-                + สร้างเอกสารใหม่
+                <FileJson className="w-6 h-6" />
+                <span>นำเข้า Code (Import)</span>
               </button>
             </div>
           </div>
@@ -250,6 +249,15 @@ export default function Dashboard() {
           >
             <option value="all" className="bg-white dark:bg-zinc-900">ทุกเทอม</option>
             {SEMESTERS.map(s => <option key={s.value} value={s.value} className="bg-white dark:bg-zinc-900">{s.label}</option>)}
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+            className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-200"
+          >
+            <option value="newest" className="bg-white dark:bg-zinc-900">🕒 ล่าสุดก่อน (Newest)</option>
+            <option value="oldest" className="bg-white dark:bg-zinc-900">📅 เก่าสุดก่อน (Oldest)</option>
           </select>
         </div>
 
@@ -303,10 +311,11 @@ export default function Dashboard() {
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">ไม่พบเอกสารในหน้านี้</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">เริ่มสร้างเอกสารใหม่ หรือใช้ AI ช่วยสร้างได้เลย</p>
             <button
-              onClick={handleCreateNew}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-lg shadow-blue-500/20"
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/30 flex items-center gap-2 transform hover:scale-105 active:scale-95"
             >
-              สร้างเอกสารใหม่
+              <FileJson className="w-6 h-6" />
+              <span>นำเข้า Code (Import)</span>
             </button>
           </div>
         )}

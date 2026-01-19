@@ -122,12 +122,33 @@ export const convertLessonToBlocks = (section: LessonSection): AnyBlock[] => {
         } as CalloutBlock);
     }
 
-    // 3. Main Content (Split by headings if possible, otherwise single block)
-    newBlocks.push({
-        id: generateId(),
-        type: 'text',
-        content: section.content || ''
-    } as TextBlock);
+    // 3. Main Content (Split into text and graph blocks)
+    const rawContent = section.content || '';
+    // Regex to find SVG tags (including multiline attributes and content)
+    // Matches <svg ... > ... </svg>
+    const svgRegex = /(<svg[\s\S]*?<\/svg>)/gi;
+
+    // Split content by SVG tags
+    const contentParts = rawContent.split(svgRegex);
+
+    contentParts.forEach(part => {
+        if (!part.trim()) return; // Skip empty parts
+
+        // Check if this part is an SVG
+        if (part.trim().toLowerCase().startsWith('<svg') && part.trim().toLowerCase().endsWith('</svg>')) {
+            newBlocks.push({
+                id: generateId(),
+                type: 'graph',
+                code: part.trim()
+            } as GraphBlock);
+        } else {
+            newBlocks.push({
+                id: generateId(),
+                type: 'text',
+                content: part
+            } as TextBlock);
+        }
+    });
 
     // 4. Examples
     if (section.examples && section.examples.length > 0) {

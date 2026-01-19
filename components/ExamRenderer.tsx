@@ -51,10 +51,27 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
                                     <div className={`inline text-gray-900 leading-relaxed ${sizeText}`}>
                                         <RichText content={q.text} />
                                     </div>
+
+                                    {/* SVG Graphic Rendering */}
+                                    {q.graphic_code && (
+                                        <div className="my-6 flex justify-center">
+                                            <div
+                                                className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
+                                                dangerouslySetInnerHTML={{ __html: q.graphic_code }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="space-y-3 ml-2">
-                                    {q.options.map((opt, oIndex) => {
+                                    {q.options && q.options.map((opt, oIndex) => {
                                         const isCorrect = q.correctOption === oIndex;
+
+                                        // Handle backward compatibility (string vs object)
+                                        const isString = typeof opt === 'string';
+                                        const text = isString ? opt : opt.text;
+                                        // Use "any" cast to safely access graphic_code on union type without strict check complexities
+                                        const graphicCode = !isString ? (opt as any).graphic_code : undefined;
+
                                         return (
                                             <div key={oIndex} className={`flex items-start gap-3 ${sizeOption} group`}>
                                                 <div className="mt-1 shrink-0 transition-transform group-hover:scale-110">
@@ -64,8 +81,18 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
                                                         <Circle className="w-5 h-5 text-gray-300 group-hover:text-gray-400" />
                                                     )}
                                                 </div>
-                                                <div className={`leading-relaxed ${showAnswers && isCorrect ? 'font-bold text-green-700' : 'text-gray-700'}`}>
-                                                    <RichText content={opt} />
+                                                <div className={`leading-relaxed w-full ${showAnswers && isCorrect ? 'font-bold text-green-700' : 'text-gray-700'}`}>
+                                                    <RichText content={text} />
+
+                                                    {/* Option Graphic (e.g. for Geometry choices) */}
+                                                    {graphicCode && (
+                                                        <div className="mt-2 mb-2">
+                                                            <div
+                                                                className="bg-white p-2 rounded border border-gray-100 shadow-sm flex min-w-[200px] [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[150px]"
+                                                                dangerouslySetInnerHTML={{ __html: graphicCode }}
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );

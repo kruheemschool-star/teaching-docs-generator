@@ -314,7 +314,7 @@ export default function EditorPage() {
                                         });
                                     }
                                     if (s.type === 'exam') {
-                                        if (s.questions) s.questions = s.questions.map(q => ({ ...q, text: cleanText(q.text)!, explanation: cleanText(q.explanation), options: q.options.map(o => cleanText(o)!) }));
+                                        if (s.questions) s.questions = s.questions.map(q => ({ ...q, text: cleanText(q.text)!, explanation: cleanText(q.explanation), options: q.options.map(o => typeof o === 'string' ? cleanText(o)! : { ...o, text: cleanText(o.text)! }) }));
                                     }
                                     return s;
                                 });

@@ -24,12 +24,31 @@ export const LectureRenderer: React.FC<LectureRendererProps> = ({ section, fontS
             )}
 
             <div className={`prose ${proseClass} max-w-none text-gray-800`}>
-                <ReactMarkdown
-                    remarkPlugins={[RemarkMath]}
-                    rehypePlugins={[RehypeKatex]}
-                >
-                    {section.content}
-                </ReactMarkdown>
+                {/* Custom Splitter to handle both Markdown and inline HTML/SVG */}
+                {section.content.split(/(<svg[\s\S]*?<\/svg>)/gi).map((part, index) => {
+                    const trimmed = part.trim();
+                    if (trimmed.toLowerCase().startsWith('<svg') && trimmed.toLowerCase().endsWith('</svg>')) {
+                        return (
+                            <div key={index} className="my-6 flex justify-center">
+                                <div
+                                    className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[500px]"
+                                    dangerouslySetInnerHTML={{ __html: trimmed }}
+                                />
+                            </div>
+                        );
+                    }
+                    if (!trimmed) return null;
+
+                    return (
+                        <ReactMarkdown
+                            key={index}
+                            remarkPlugins={[RemarkMath]}
+                            rehypePlugins={[RehypeKatex]}
+                        >
+                            {part}
+                        </ReactMarkdown>
+                    );
+                })}
             </div>
 
             {section.keyPoints && section.keyPoints.length > 0 && (

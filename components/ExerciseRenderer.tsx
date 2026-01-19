@@ -57,6 +57,16 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                             </div>
                         </div>
 
+                        {/* SVG Graphic Rendering */}
+                        {item.graphic_code && (
+                            <div className="my-6 flex justify-center">
+                                <div
+                                    className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
+                                    dangerouslySetInnerHTML={{ __html: item.graphic_code }}
+                                />
+                            </div>
+                        )}
+
                         {/* Show Solution if toggled ON */}
                         {showAnswers ? (
                             <div className="ml-6 mt-3 pl-4 py-3 pr-4 bg-gray-50 border-l-4 border-gray-300 rounded-r-md">
@@ -98,8 +108,9 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                             )
                         )}
                     </div>
-                ))}
-            </div>
-        </div>
+                ))
+                }
+            </div >
+        </div >
     );
 };

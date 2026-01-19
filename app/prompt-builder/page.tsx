@@ -18,10 +18,14 @@ type ContentType = "lesson" | "lecture" | "exercise" | "exam";
 type Difficulty = "basic" | "intermediate" | "advanced" | "word-problem" | "mixed";
 type TeachingStyle = "standard" | "real-world" | "gamification" | "step-by-step";
 type WritingTone = "friendly" | "formal" | "professional" | "mentor";
-type ContentElement = "theory" | "techniques" | "formulas" | "examples" | "practice";
+type ContentElement = "theory" | "techniques" | "formulas" | "examples" | "practice" | "visuals";
 type TeachingApproach = "visual" | "conceptual" | "procedural" | "discovery";
 type LessonDepth = "introduction" | "standard" | "deep-dive";
+// LessonDepth definition removed (duplicate)
 type ExampleStyle = "instant" | "funny" | "real-world" | "game" | "gradual";
+type QuestionType = "text" | "geometry";
+type QuestionMode = "example" | "exercise";
+type QuestionStyle = "general" | "ipst" | "onet" | "competition" | "olympiad";
 
 const DIFFICULTIES: { value: Difficulty; label: string; icon: string; description: string }[] = [
     { value: "basic", label: "ง่าย", icon: "🟢", description: "เน้นความจำ ความเข้าใจพื้นฐาน" },
@@ -40,7 +44,7 @@ const TEACHING_STYLES: { value: TeachingStyle; label: string; icon: string; desc
 
 const WRITING_TONES: { value: WritingTone; label: string; icon: string; description: string }[] = [
     { value: "friendly", label: "เป็นกันเอง", icon: "😊", description: "ครูใจดีสอนศิษย์ เข้าใจง่าย เปรียบเทียบเห็นภาพ" },
-    { value: "formal", label: "ทางการ", icon: "📄", description: "ภาษาทางการ สุภาพ ถูกต้องตามหลักวิชาการ" },
+    { value: "formal", label: "นักเล่าเรื่อง", icon: "🎙️", description: "เน้นความเข้าใจง่าย เห็นภาพ เปรียบเทียบชัดเจน (NotebookLM Style)" },
     { value: "professional", label: "จริงจัง", icon: "🎓", description: "เน้นความถูกต้อง" },
     { value: "mentor", label: "พี่สอนน้อง", icon: "👨‍🏫", description: "อบอุ่น ให้กำลังใจ" },
 ];
@@ -51,6 +55,7 @@ const CONTENT_ELEMENTS: { value: ContentElement; label: string; icon: string }[]
     { value: "formulas", label: "สูตร", icon: "📐" },
     { value: "examples", label: "ตัวอย่าง", icon: "✏️" },
     { value: "practice", label: "แบบฝึกหัดท้ายบท", icon: "📝" },
+    { value: "visuals", label: "กราฟ/รูปภาพ", icon: "📊" },
 ];
 
 // Options specific to "lesson" (เนื้อหา) type
@@ -75,6 +80,14 @@ const EXAMPLE_STYLES: { value: ExampleStyle; label: string; icon: string; descri
     { value: "game", label: "เกม/การ์ตูน", icon: "🎮", description: "เชื่อมโยงกับเกม/การ์ตูน" },
 ];
 
+const QUESTION_STYLES: { value: QuestionStyle; label: string; icon: string; description: string }[] = [
+    { value: "general", label: "ทั่วไป", icon: "📝", description: "โจทย์มาตรฐาน เข้าใจง่าย" },
+    { value: "ipst", label: "สสวท.", icon: "🔬", description: "เน้นกระบวนการคิด วิเคราะห์ เชื่อมโยงชีวิตจริง" },
+    { value: "onet", label: "O-NET", icon: "🎓", description: "วัดความรู้รวบยอด พื้นฐานแน่น ตัดตัวเลือกได้" },
+    { value: "competition", label: "แข่งขัน", icon: "🏆", description: "โจทย์พลิกแพลง ซับซ้อน ต้องใช้เทคนิคลัด" },
+    { value: "olympiad", label: "โอลิมปิค", icon: "🥇", description: "ทฤษฎีบทลึกซึ้ง พิสูจน์ ตรรกะขั้นสูง" },
+];
+
 export default function PromptBuilder() {
     // Form state
     const [classLevel, setClassLevel] = useState<ClassLevel>("ม.1");
@@ -97,6 +110,7 @@ export default function PromptBuilder() {
     const [includeExamples, setIncludeExamples] = useState(true);
     const [exampleCount, setExampleCount] = useState(3);
     const [includePractice, setIncludePractice] = useState(false); // Default false as requested to remove
+    const [includeVisuals, setIncludeVisuals] = useState(false);
     const [practiceCount, setPracticeCount] = useState(5);
     const [exampleStyle, setExampleStyle] = useState<ExampleStyle>("gradual");
 
@@ -108,6 +122,11 @@ export default function PromptBuilder() {
 
     // Additional Instructions
     const [additionalInstructions, setAdditionalInstructions] = useState("");
+
+    // Geometry Generator State
+    const [questionType, setQuestionType] = useState<QuestionType>("text");
+    const [questionMode, setQuestionMode] = useState<QuestionMode>("example");
+    const [questionStyle, setQuestionStyle] = useState<QuestionStyle>("general");
 
     // Mixed Difficulty Distribution
     const [difficultyDistribution, setDifficultyDistribution] = useState({
@@ -143,7 +162,7 @@ export default function PromptBuilder() {
     // Generate prompt when any relevant state changes
     useEffect(() => {
         generatePrompt();
-    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount]);
+    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount, questionType, questionMode, questionStyle]);
 
     const getDisplayGradeLevel = () => {
         const levelInfo = CLASS_LEVELS.find(l => l.value === classLevel);
@@ -197,7 +216,12 @@ IMPORTANT: Strictly follow these counts.`;
             case "friendly":
                 return "Use a 'FRIENDLY TEACHER' tone (ครูใจดีสอนศิษย์). Write as if you are a kind teacher explaining to a student one-on-one.\nIMPORTANT: Explain concepts using ANALOGIES/COMPARISONS to simple, clearly visible everyday things (เปรียบเทียบกับสิ่งง่ายๆ ที่เห็นภาพชัดเจน).\nIMPORTANT: Use SHORT but SHARP/PUNCHY words that have deep meaning (คำสั้นๆ แต่คม ลึกซึ้ง).\nMake it feel warm, encouraging, and immediately understandable.";
             case "formal":
-                return "Use a FORMAL and ACADEMIC tone. Write professionally with proper Thai academic language. Avoid colloquialisms. Focus on accuracy and correctness.";
+                return `ช่วยอธิบายเรื่อง ${getTopicForPrompt()} โดยใช้สไตล์การเขียนแบบ 'NotebookLM' ที่เน้นความเข้าใจง่ายและเห็นภาพ ตามกฎ 5 ข้อนี้:
+1. เปิดด้วย 'ทำไม' ก่อน 'อย่างไร': อย่าเพิ่งขึ้นสูตร ให้เริ่มด้วยปัญหาในโลกความเป็นจริงที่ทำให้เราต้องการคณิตศาสตร์เรื่องนี้ (เหมือนสไลด์ที่เริ่มด้วยความยากลำบากในการเขียนเลขศูนย์เยอะๆ 1)
+2. เปลี่ยนศัพท์เทคนิคเป็น 'คำกริยา': ให้ตั้งชื่อเล่นให้กฎทางคณิตศาสตร์ที่บอกถึง 'การกระทำ'
+3. โชว์ให้เห็นภาพทีละบรรทัด (Step-by-Step): ห้ามรวบรัด ให้กระจายตัวเลขออกมาให้เห็นที่มาที่ไป
+4. ใช้การเปรียบเทียบที่จับต้องได้: ยกตัวอย่างสิ่งที่เห็นภาพชัดเจน ระหว่างสิ่งที่เล็กมาก (เช่น เซลล์, อะตอม) กับสิ่งที่ใหญ่มาก (เช่น จักรวาล, ระยะทาง) เพื่อให้เห็นสเกลของตัวเลข
+5. ภาษาต้องสั้น กระชับ ทรงพลัง: ใช้ประโยคบอกเล่าที่มั่นใจ เหมือนหนังสือ How-to ตัดคำฟุ่มเฟือยออก เน้นสาระเน้นๆ และจบด้วยสรุปที่คมคาย`;
             case "professional":
                 return "Use a SERIOUS and PRECISE tone. Focus on accuracy and clarity. Be thorough and systematic in explanations.";
             case "mentor":
@@ -220,6 +244,31 @@ IMPORTANT: Strictly follow these counts.`;
         }
     };
 
+    const getVisualsInstruction = () => {
+        return `
+CRITICAL INSTRUCTION FOR SVG IMAGES/GRAPHS:
+If the content requires a graph, geometric shape, or diagram to be understood (e.g., Geometry, Function Graphs, Data Charts), you MUST provide the FULL SVG CODE.
+
+1.  **Placement Rule**:
+    -   **For Lessons/Summaries (Markdown)**: Insert the SVG code directly after the paragraph that describes it.
+    -   **For Exams/Exercises (JSON)**: Put the SVG code inside the "graphic_code" field of the question object.
+
+2.  **Code Format**:
+    <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+      <!-- Your SVG content here -->
+    </svg>
+    
+    IMPORTANT: Do NOT wrap the SVG in markdown code blocks (like \`\`\`xml ... \`\`\`). Write the raw HTML/SVG tags directly into the content.
+
+3.  **Styling**:
+    -   Use **thick strokes** (stroke-width="2.5") for main lines.
+    -   Use **black** or **dark gray** colors.
+    -   Make text/labels LARGE (font-size="20" or larger).
+    -   Do NOT place text on top of lines. Offset it clearly.
+4.  **No Placeholders**: Do NOT write "[Insert Graph Here]". You must WRITE THE CODE.
+`;
+    };
+
     const getContentElementsInstruction = () => {
         const elements: string[] = [];
         if (contentElements.includes("theory")) elements.push("Theoretical explanations and core concepts");
@@ -227,6 +276,7 @@ IMPORTANT: Strictly follow these counts.`;
         if (contentElements.includes("formulas")) elements.push("Important formulas with clear explanations of each variable");
         if (contentElements.includes("examples")) elements.push("Worked examples with step-by-step solutions");
         if (contentElements.includes("practice")) elements.push("Practice problems at the end for students to try");
+        if (contentElements.includes("visuals")) elements.push("SVG Graphs/Diagrams for key concepts");
 
         if (elements.length === 0) return "";
         return "\n\nINCLUDE THE FOLLOWING ELEMENTS:\n- " + elements.join("\n- ");
@@ -251,6 +301,21 @@ IMPORTANT: Strictly follow these counts.`;
         }
     };
 
+    const getQuestionStyleInstruction = () => {
+        switch (questionStyle) {
+            case "general":
+                return "";
+            case "ipst":
+                return "\nSTYLE: IPST (สสวท). Focus on CRITICAL THINKING, PROBLEM SOLVING PROCESS, and REAL-WORLD APPLICATION. Questions should require analyzing information, not just rote memorization. Use scenarios like buying/selling, measurement in daily life, or pattern recognition.";
+            case "onet":
+                return "\nSTYLE: O-NET. Create standardized test items. Questions should test FUNDAMENTAL CONCEPTS clearly. Choices should be distinct, with plausible distractors (ตัวลวงที่น่าสนใจ). Focus on key indicators.";
+            case "competition":
+                return "\nSTYLE: COMPETITION (สอบแข่งขัน). Create TRICKY and COMPLEX questions. Problems should require MULTI-STEP solutions or specific TRICKS/TECHNIQUES to solve quickly. Test speed and accuracy combined.";
+            case "olympiad":
+                return "\nSTYLE: OLYMPIAD. Create very ADVANCED and ABSTRACT problems. Focus on Proofs, Number Theory, Combinatorics, or Geometry with auxiliary lines. Problems should require deep logical deduction and innovative thinking.";
+        }
+    };
+
     const generatePrompt = () => {
         const topicText = getTopicForPrompt();
         const gradeText = getDisplayGradeLevel();
@@ -265,7 +330,7 @@ IMPORTANT: Strictly follow these counts.`;
         // Core instruction
         const baseInstruction = `You are an expert Thai mathematics teacher assistant. Create a JSON file for a teaching document about "${topicText}" for ${gradeText} students.${subTopicText}${methodInstruction}${additionalText}
 
-${contentType === "lesson" || contentType === "lecture" ? `WRITING TONE: ${getWritingToneInstruction()}` : `${getDifficultyInstruction()}${getTeachingStyleInstruction()}`}
+${contentType === "lesson" || contentType === "lecture" ? `WRITING TONE: ${getWritingToneInstruction()}` : `${getDifficultyInstruction()}${getTeachingStyleInstruction()}${getQuestionStyleInstruction()}`}
 
 Strictly output ONLY valid JSON code inside a markdown code block (\`\`\`json ... \`\`\`) for easy copying. Do not include any additional text outside the code block.
 The JSON must follow this exact typescript interface structure:
@@ -285,13 +350,54 @@ interface CourseDocument {
         let typeSpecificInstruction = "";
 
         if (contentType === "exam") {
-            typeSpecificInstruction = `
+            if (questionType === "geometry") {
+                typeSpecificInstruction = `
+type Option = string | { text: string; graphic_code?: string };
+
+type Section = {
+  type: "exam";
+  id: string;
+  title: string;
+  questions: {
+    id: number;
+    question: string; // The problem text (use LaTeX for math)
+    graphic_code: string; // COMPLETE SVG CODE <svg>...</svg>
+    explanation: string; // Detailed solution with LaTeX
+    difficulty: '${difficulty === "mixed" ? "Mixed" : difficulty}';
+    ${questionMode === "example" ? "" : "options?: Option[]; correctOption?: number;"}
+  }[];
+};
+
+Make sure to create exactly ${itemCount} geometry problems.
+
+CRITICAL INSTRUCTION FOR GRAPHIC_CODE (SVG):
+1. You MUST write COMPLETE SVG CODE including the opening <svg> and closing </svg> tags.
+2. **Professional Look:** Create mathematical diagrams that are clean, professional, and easy to read.
+3. **Canvas & Padding:** Use a large viewBox="0 0 500 500". Draw the shape in the center, leaving at least 10-20% padding from the edges. Do NOT draw on the very edge.
+4. **Line Weight:**
+   - **Main Outline:** Use 'stroke-width="2.5"' or '3' for the main geometric shapes (High visibility).
+   - **Details/Dimensions:** Use 'stroke-width="1.5"' for dimension lines, dashed lines, or angle markers.
+5. **Text Placement:**
+   - **Do NOT place text directly on lines or points.**
+   - Calculate an offset for labels (A, B, C, etc.) so they "float" near the point but don't touch it.
+   - Use a clear sans-serif font (e.g., Arial).
+   - Font-size: Large (e.g., 20-24px) for readability.
+6. **Styling:**
+   - Stroke: black
+   - Fill: none (transparent) or light gray (#f5f5f5) for shaded areas.
+   - Do NOT use external images. DRAW EVERYTHING with SVG paths.
+
+${questionMode === "exercise" ? "IMPORTANT: This is an EXERCISE. Provide options. Options can be simple strings or objects if they need images (SVG). If an option includes a shape/diagram, use the object format: { text: 'Option A', graphic_code: '<svg>...</svg>' }." : "IMPORTANT: This is an EXAMPLE. Show the full detailed solution."}
+`;
+            } else {
+                typeSpecificInstruction = `
 type Section = {
   type: "exam";
   id: string;
   title: string;
   questions: {
     text: string;
+    graphic_code?: string; // Optional SVG code if needed
     options: string[]; // Array of 4 strings
     correctOption: number; // 0-3
     explanation: string; // Detailed explanation for the answer
@@ -306,14 +412,36 @@ IMPORTANT: The 'explanation' field MUST be EXTREMELY DETAILED and EASY TO UNDERS
    - Do not just say "A is correct". Show the full work.
 IMPORTANT: For EVERY question, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
 `;
+            }
         } else if (contentType === "exercise") {
-            typeSpecificInstruction = `
+            if (questionType === "geometry") {
+                typeSpecificInstruction = `
+type Section = {
+  type: "exercise";
+  id: string;
+  title: string;
+  items: {
+    id: number;
+    question: string;
+    graphic_code: string; // SVG Code
+    detailedSolution: string;
+    answer: string;
+    difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา';
+  }[];
+};
+
+Make sure to create exactly ${itemCount} practice geometry problems.
+FOLLOW THE SAME SVG INSTRUCTIONS AS ABOVE.
+`;
+            } else {
+                typeSpecificInstruction = `
 type Section = {
   type: "exercise";
   id: string;
   title: string;
   items: {
     question: string;
+    graphic_code?: string; // Optional SVG code
     answer: string; // The correct answer
     detailedSolution: string; // Full step-by-step solution method
     difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
@@ -327,6 +455,7 @@ IMPORTANT: The 'detailedSolution' MUST be EXTREMELY DETAILED and EASY TO UNDERST
 IMPORTANT: For EVERY item, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
 IMPORTANT: Do NOT include 'spaceForWork' or 'lines'.
 `;
+            }
         } else if (contentType === "lecture") {
             typeSpecificInstruction = `
 type Section = {
@@ -383,7 +512,10 @@ IMPORTANT: Start the lecture immediately with the core content. Do not use any "
 `;
         }
 
-        const prompt = `${baseInstruction}${typeSpecificInstruction}
+
+        const visualInstruction = (contentType === 'lesson' && includeVisuals) || (contentType === 'lecture' && contentElements.includes('visuals')) ? getVisualsInstruction() : "";
+
+        const prompt = `${baseInstruction}${typeSpecificInstruction}${visualInstruction}
 Example JSON Structure:
         {
             "documentMetadata": {
@@ -666,6 +798,98 @@ Example JSON Structure:
                             </div>
                         </div>
 
+                        {/* Section: Question Type & Mode (Geometry Support) */}
+                        {(contentType === "exam" || contentType === "exercise") && (
+                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-5">
+                                <h3 className="font-bold text-black text-lg flex items-center gap-2">
+                                    📐 รูปแบบและประเภทโจทย์
+                                </h3>
+
+                                {/* Question Type Selection */}
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-bold text-gray-700">ประเภทคำถาม (Question Type)</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => setQuestionType("text")}
+                                            className={`p-3 rounded-xl border-2 flex items-center gap-2 justify-center transition-all ${questionType === "text"
+                                                ? "bg-purple-50 border-purple-500 text-purple-700 font-bold"
+                                                : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                                }`}
+                                        >
+                                            📝 โจทย์ข้อความ (Text Only)
+                                        </button>
+                                        <button
+                                            onClick={() => setQuestionType("geometry")}
+                                            className={`p-3 rounded-xl border-2 flex items-center gap-2 justify-center transition-all ${questionType === "geometry"
+                                                ? "bg-purple-50 border-purple-500 text-purple-700 font-bold"
+                                                : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                                }`}
+                                        >
+                                            📐 เรขาคณิต/รูปภาพ (Geometry)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Mode Selection (Only for Geometry) */}
+                                {questionType === "geometry" && (
+                                    <div className="space-y-2 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
+                                        <label className="block text-sm font-bold text-gray-700">รูปแบบการแสดงผล (Mode)</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={() => setQuestionMode("example")}
+                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${questionMode === "example"
+                                                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                                                    : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                                    }`}
+                                            >
+                                                <span className="font-bold">💡 ตัวอย่าง + เฉลย</span>
+                                                <span className="text-xs opacity-70">แสดงวิธีทำละเอียด</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setQuestionMode("exercise")}
+                                                className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${questionMode === "exercise"
+                                                    ? "bg-green-50 border-green-500 text-green-700"
+                                                    : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                                    }`}
+                                            >
+                                                <span className="font-bold">✍️ แบบฝึกหัด</span>
+                                                <span className="text-xs opacity-70">ซ่อนเฉลย (ให้ทำเอง)</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Section: Question Style (New) */}
+                        {(contentType === "exam" || contentType === "exercise") && (
+                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                                <h3 className="font-bold text-black text-lg flex items-center gap-2">
+                                    🎨 สไตล์โจทย์ (Question Style)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {QUESTION_STYLES.map((style) => (
+                                        <button
+                                            key={style.value}
+                                            onClick={() => setQuestionStyle(style.value)}
+                                            className={`p-3 rounded-xl text-left transition-all border-2 ${questionStyle === style.value
+                                                ? "bg-purple-50 border-purple-500 text-purple-900 shadow-sm"
+                                                : "bg-white hover:bg-gray-50 text-gray-600 border-gray-100 hover:border-gray-200"
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xl">{style.icon}</span>
+                                                <span className="font-bold">{style.label}</span>
+                                            </div>
+                                            <p className={`text-xs ${questionStyle === style.value ? "text-purple-700" : "text-gray-400"}`}>
+                                                {style.description}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Section: Writing Tone - For lesson and lecture */}
                         {(contentType === "lesson" || contentType === "lecture") && (
                             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
@@ -787,7 +1011,24 @@ Example JSON Structure:
                                         )}
                                     </div>
 
+
                                     {/* Practice Problems Section Removed */}
+
+                                    {/* Visuals Checkbox */}
+                                    <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition">
+                                        <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={includeVisuals}
+                                                onChange={(e) => setIncludeVisuals(e.target.checked)}
+                                                className="w-5 h-5 accent-purple-600 rounded bg-white border-gray-300"
+                                            />
+                                            <div>
+                                                <span className="font-bold text-gray-800">📊 มีกราฟ/รูปภาพประกอบ</span>
+                                                <p className="text-xs text-gray-500">สร้างโค้ด SVG สำหรับกราฟหรือเรขาคณิต</p>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* Example Style Selector */}

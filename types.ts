@@ -114,6 +114,7 @@ export interface ExerciseItem {
     lines?: number; // Number of dotted lines to render if spaceForWork is true
     answer?: string; // Short answer
     detailedSolution?: string; // Step-by-step solution
+    graphic_code?: string; // SVG code for geometry/diagrams
     difficulty?: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
 }
 
@@ -126,9 +127,10 @@ export interface ExerciseSection extends BaseSection {
 export interface ExamQuestion {
     id?: string;
     text: string;
-    options: string[];
+    options: (string | { text: string; graphic_code?: string; id?: string })[];
     correctOption: number; // 0-based index
     explanation?: string;
+    graphic_code?: string; // SVG code for geometry/diagrams
     difficulty?: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา';
 }
 

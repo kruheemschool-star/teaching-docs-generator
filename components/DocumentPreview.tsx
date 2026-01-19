@@ -28,11 +28,11 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     const renderSection = (section: Section, index: number) => {
         switch (section.type) {
             case 'lecture':
-                return <LectureRenderer key={section.id || index} section={section} fontSizeLevel={fontSizeLevel} />;
+                return <LectureRenderer key={`${section.id}-${index}`} section={section} fontSizeLevel={fontSizeLevel} />;
             case 'lesson':
                 return (
                     <LessonRenderer
-                        key={section.id || index}
+                        key={`${section.id}-${index}`}
                         section={section}
                         isEditing={isEditing}
                         showAnswers={showAnswers}
@@ -41,9 +41,9 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                     />
                 );
             case 'exercise':
-                return <ExerciseRenderer key={section.id || index} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} />;
+                return <ExerciseRenderer key={`${section.id}-${index}`} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} />;
             case 'exam':
-                return <ExamRenderer key={section.id || index} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} />;
+                return <ExamRenderer key={`${section.id}-${index}`} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} />;
             default:
                 return null;
         }

@@ -26,7 +26,14 @@ export const ExamEditor: React.FC<ExamEditorProps> = ({ section, onChange, onBac
     const updateOption = (qIndex: number, oIndex: number, value: string) => {
         const newQuestions = [...section.questions];
         const newOptions = [...newQuestions[qIndex].options];
-        newOptions[oIndex] = value;
+        const originalOpt = newOptions[oIndex];
+
+        if (typeof originalOpt === 'string') {
+            newOptions[oIndex] = value;
+        } else {
+            newOptions[oIndex] = { ...originalOpt, text: value };
+        }
+
         newQuestions[qIndex].options = newOptions;
         onChange({ ...section, questions: newQuestions });
     };
@@ -93,7 +100,7 @@ export const ExamEditor: React.FC<ExamEditorProps> = ({ section, onChange, onBac
                                         />
                                         <input
                                             type="text"
-                                            value={opt}
+                                            value={typeof opt === 'string' ? opt : opt.text}
                                             onChange={(e) => updateOption(qIndex, oIndex, e.target.value)}
                                             className="flex-1 bg-transparent border-b border-zinc-800 focus:border-zinc-500 text-xs text-zinc-300 py-1 outline-none"
                                         />

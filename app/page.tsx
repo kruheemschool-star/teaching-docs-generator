@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
 import {
   getAllDocuments,
@@ -20,6 +20,7 @@ import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
 import { MoveDocumentModal } from '@/components/MoveDocumentModal';
 import { ImportJsonModal } from '@/components/ImportJsonModal';
+import { BackupModal } from '@/components/BackupModal';
 
 const LEGACY_STORAGE_KEY = 'teaching-docs-current-work';
 
@@ -42,6 +43,7 @@ export default function Dashboard() {
 
   const [moveModal, setMoveModal] = useState<{ isOpen: boolean; docId: string | null }>({ isOpen: false, docId: null });
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   // Migration & Load logic
   useEffect(() => {
@@ -203,6 +205,13 @@ export default function Dashboard() {
             </h2>
             <div className="flex gap-3">
               <button
+                onClick={() => setIsBackupModalOpen(true)}
+                className="p-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 rounded-xl transition shadow-sm"
+                title="จัดการข้อมูล (Backup & Restore)"
+              >
+                <Database className="w-5 h-5" />
+              </button>
+              <button
                 onClick={handleCreateFolder}
                 className="px-4 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium transition flex items-center gap-2"
               >
@@ -334,6 +343,11 @@ export default function Dashboard() {
         onClose={() => setIsImportModalOpen(false)}
         onImport={refreshData}
         currentFolderId={currentFolderId}
+      />
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        onRestoreComplete={refreshData}
       />
     </div>
   );

@@ -14,7 +14,7 @@ import {
     getTopics,
 } from "@/lib/curriculumData";
 
-type ContentType = "lesson" | "lecture" | "exercise" | "exam";
+type ContentType = "lesson" | "lecture" | "exercise" | "exam" | "video-summary";
 type Difficulty = "basic" | "intermediate" | "advanced" | "word-problem" | "mixed";
 type TeachingStyle = "standard" | "real-world" | "gamification" | "step-by-step";
 type WritingTone = "friendly" | "formal" | "professional" | "mentor";
@@ -26,6 +26,10 @@ type ExampleStyle = "instant" | "funny" | "real-world" | "game" | "gradual";
 type QuestionType = "text" | "geometry";
 type QuestionMode = "example" | "exercise";
 type QuestionStyle = "general" | "ipst" | "onet" | "competition" | "olympiad";
+
+// Video Summarizer Types
+type InputSourceType = "topic" | "transcript";
+type SummaryTone = "easy" | "intensive" | "exam-prep";
 
 const DIFFICULTIES: { value: Difficulty; label: string; icon: string; description: string }[] = [
     { value: "basic", label: "ง่าย", icon: "🟢", description: "เน้นความจำ ความเข้าใจพื้นฐาน" },
@@ -88,6 +92,12 @@ const QUESTION_STYLES: { value: QuestionStyle; label: string; icon: string; desc
     { value: "olympiad", label: "โอลิมปิค", icon: "🥇", description: "ทฤษฎีบทลึกซึ้ง พิสูจน์ ตรรกะขั้นสูง" },
 ];
 
+const SUMMARY_TONES: { value: SummaryTone; label: string; icon: string; description: string }[] = [
+    { value: "easy", label: "เข้าใจง่าย", icon: "🌱", description: "อธิบายแบบพื้นฐาน เปรียบเทียบให้เห็นภาพ" },
+    { value: "intensive", label: "สรุปเข้มข้น", icon: "🔥", description: "กระชับ ตรงประเด็น เนื้อๆ" },
+    { value: "exam-prep", label: "ติวสอบ", icon: "📚", description: "เน้นจุดที่ออกสอบบ่อย เทคนิคจำง่าย" },
+];
+
 export default function PromptBuilder() {
     // Form state
     const [classLevel, setClassLevel] = useState<ClassLevel>("ม.1");
@@ -128,6 +138,11 @@ export default function PromptBuilder() {
     const [questionMode, setQuestionMode] = useState<QuestionMode>("example");
     const [questionStyle, setQuestionStyle] = useState<QuestionStyle>("general");
 
+    // Video Summarizer State
+    const [inputSource, setInputSource] = useState<InputSourceType>("topic");
+    const [transcript, setTranscript] = useState("");
+    const [summaryTone, setSummaryTone] = useState<SummaryTone>("easy");
+
     // Mixed Difficulty Distribution
     const [difficultyDistribution, setDifficultyDistribution] = useState({
         basic: 3,
@@ -162,7 +177,7 @@ export default function PromptBuilder() {
     // Generate prompt when any relevant state changes
     useEffect(() => {
         generatePrompt();
-    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount, questionType, questionMode, questionStyle]);
+    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount, questionType, questionMode, questionStyle, inputSource, transcript, summaryTone]);
 
     const getDisplayGradeLevel = () => {
         const levelInfo = CLASS_LEVELS.find(l => l.value === classLevel);
@@ -313,6 +328,26 @@ If the content requires a graph, geometric shape, or diagram to be understood (e
                 return "\nSTYLE: COMPETITION (สอบแข่งขัน). Create TRICKY and COMPLEX questions. Problems should require MULTI-STEP solutions or specific TRICKS/TECHNIQUES to solve quickly. Test speed and accuracy combined.";
             case "olympiad":
                 return "\nSTYLE: OLYMPIAD. Create very ADVANCED and ABSTRACT problems. Focus on Proofs, Number Theory, Combinatorics, or Geometry with auxiliary lines. Problems should require deep logical deduction and innovative thinking.";
+        }
+    };
+
+    const getSummaryToneInstruction = () => {
+        switch (summaryTone) {
+            case "easy":
+                return `TONE: เน้นเข้าใจง่าย
+- ใช้ภาษาเรียบง่าย อ่านแล้วเข้าใจทันที
+- เปรียบเทียบกับสิ่งใกล้ตัว (Analogy)
+- หลีกเลี่ยงศัพท์เทคนิคที่ซับซ้อน`;
+            case "intensive":
+                return `TONE: สรุปเข้มข้น
+- กระชับ ได้ใจความ ไม่เยิ่นเย้อ
+- เน้นสาระสำคัญ ตัดรายละเอียดปลีกย่อย
+- ใช้ Bullet points และ Numbering`;
+            case "exam-prep":
+                return `TONE: เตรียมสอบ
+- เน้นจุดที่มักออกสอบบ่อย
+- มีเทคนิคจำง่าย (Mnemonics)
+- เตือนกับดักข้อสอบ (Exam Traps)`;
         }
     };
 
@@ -510,6 +545,49 @@ IMPORTANT: Start the lecture immediately with the core content. Do not use any "
 
 
 `;
+        } else if (contentType === "video-summary") {
+            const transcriptText = inputSource === "transcript" && transcript.trim()
+                ? `\n\nTRANSCRIPT TO SUMMARIZE:\n"""\n${transcript}\n"""`
+                : "";
+
+            typeSpecificInstruction = `
+You are a Master Teacher's Assistant. Your task is to summarize ${inputSource === "transcript" ? "the provided TRANSCRIPT" : `content about "${topicText}"`} into a structured student-friendly guide.
+
+${getSummaryToneInstruction()}
+
+Please follow this EXACT structure in your JSON output:
+
+type Section = {
+  type: "video-summary";
+  id: string;
+  title: string;
+  coreConcept: {
+    title: string;      // e.g., "💡 สรุปมโนทัศน์"
+    content: string;    // Markdown: อธิบายให้ง่ายเหมือนเล่าให้เพื่อนฟัง พร้อม Analogy ที่เห็นภาพชัดเจน
+  };
+  stepByStep: {
+    title: string;      // e.g., "🛣️ วิธีการทำ"
+    steps: string[];    // Array of numbered steps, each step should be clear and actionable
+  };
+  dangerZone: {
+    title: string;      // e.g., "⚠️ จุดอันตรายที่ต้องระวัง"
+    warnings: {
+      mistake: string;   // จุดที่มักผิด / Common Mistake
+      why: string;       // ทำไมถึงผิด / Why it fails
+      prevention: string; // วิธีป้องกัน / How to prevent
+    }[];
+  };
+  keyTakeaways: string[]; // 3-5 bullet points summarizing the most important things to remember
+};
+
+Target Audience: นักเรียนระดับชั้น ${gradeText}
+
+IMPORTANT INSTRUCTIONS:
+1. 💡 สรุปมโนทัศน์ (Core Concept): อธิบายเรื่องนี้ให้ง่ายเหมือนเล่าให้เพื่อนฟัง ใช้การเปรียบเทียบ (Analogy) ที่เห็นภาพชัดเจน
+2. 🛣️ วิธีการทำ (Step-by-Step): สรุปลำดับขั้นตอนการแก้โจทย์หรือวิธีการ เป็นข้อๆ 1, 2, 3... ที่ชัดเจนและปฏิบัติตามได้
+3. ⚠️ จุดอันตรายที่ต้องระวัง (Danger Zone): วิเคราะห์จากเนื้อหาว่าจุดไหนที่นักเรียนมักจะ 'ตกม้าตาย' หรือเข้าใจผิดบ่อยที่สุด พร้อมวิธีป้องกัน (ต้องมีอย่างน้อย 2-3 ข้อ)
+${transcriptText}
+`;
         }
 
 
@@ -528,8 +606,8 @@ Example JSON Structure:
                 {
                     "type": "${contentType}",
                     "id": "1",
-                    "title": "${topicText} ${contentType === 'exam' ? 'Test' : contentType === 'exercise' ? 'Exercise' : contentType === 'lesson' ? 'บทเรียน' : 'สรุป'}",
-                    ${contentType === 'exam' ? '"questions": [...]' : contentType === 'exercise' ? '"items": [...]' : contentType === 'lesson' ? '"objectives": [...], "prerequisites": [...], "content": "...", "examples": [...], "keyTakeaways": []' : '"content": "...", "keyPoints": [...]'}
+                    "title": "${topicText} ${contentType === 'exam' ? 'Test' : contentType === 'exercise' ? 'Exercise' : contentType === 'lesson' ? 'บทเรียน' : contentType === 'video-summary' ? 'สรุป' : 'สรุป'}",
+                    ${contentType === 'exam' ? '"questions": [...]' : contentType === 'exercise' ? '"items": [...]' : contentType === 'lesson' ? '"objectives": [...], "prerequisites": [...], "content": "...", "examples": [...], "keyTakeaways": []' : contentType === 'video-summary' ? '"coreConcept": {...}, "stepByStep": {...}, "dangerZone": {...}, "keyTakeaways": [...]' : '"content": "...", "keyPoints": [...]'}
     }
   ]
 } `;
@@ -776,7 +854,8 @@ Example JSON Structure:
                                     { id: 'lesson', label: 'เนื้อหา (Lesson)', icon: '📖', desc: 'ปูพื้นฐาน อธิบายละเอียด' },
                                     { id: 'exercise', label: 'แบบฝึกหัด (Exercise)', icon: '✏️', desc: 'ข้อสอบเติมคำตอบ' },
                                     { id: 'exam', label: 'ข้อสอบ (Exam)', icon: '📝', desc: 'แบบปรนัย 4 ตัวเลือก' },
-                                    { id: 'lecture', label: 'สรุปเนื้อหา (Summary)', icon: '📚', desc: 'ทบทวน รวบรัด' }
+                                    { id: 'lecture', label: 'สรุปเนื้อหา (Summary)', icon: '📚', desc: 'ทบทวน รวบรัด' },
+                                    { id: 'video-summary', label: 'สรุปจากวิดีโอ', icon: '🎬', desc: 'แปลง Transcript เป็นสรุป 3 ส่วน' }
                                 ].map((type) => (
                                     <button
                                         key={type.id}
@@ -797,6 +876,88 @@ Example JSON Structure:
                                 ))}
                             </div>
                         </div>
+
+                        {/* Section: Video Summarizer - Input Source */}
+                        {contentType === "video-summary" && (
+                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                                <h3 className="font-bold text-black text-lg flex items-center gap-2">
+                                    🎬 แหล่งข้อมูลต้นทาง
+                                </h3>
+
+                                {/* Tab Selection */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setInputSource("topic")}
+                                        className={`p-3 rounded-xl border-2 flex items-center gap-2 justify-center transition-all ${inputSource === "topic"
+                                            ? "bg-purple-50 border-purple-500 text-purple-700 font-bold"
+                                            : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                            }`}
+                                    >
+                                        ✨ พิมพ์หัวข้อ
+                                    </button>
+                                    <button
+                                        onClick={() => setInputSource("transcript")}
+                                        className={`p-3 rounded-xl border-2 flex items-center gap-2 justify-center transition-all ${inputSource === "transcript"
+                                            ? "bg-purple-50 border-purple-500 text-purple-700 font-bold"
+                                            : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                            }`}
+                                    >
+                                        📝 วาง Transcript
+                                    </button>
+                                </div>
+
+                                {/* Transcript Input */}
+                                {inputSource === "transcript" && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                        <label className="block text-sm font-bold text-gray-700">
+                                            บทบรรยายจากวิดีโอ (Transcript)
+                                        </label>
+                                        <textarea
+                                            value={transcript}
+                                            onChange={(e) => setTranscript(e.target.value)}
+                                            placeholder="วางข้อความที่ถอดจากวิดีโอหรือคลิปสอนที่นี่...&#10;&#10;เช่น: 'สวัสดีครับนักเรียน วันนี้เราจะมาเรียนเรื่อง...'"
+                                            className="w-full h-48 bg-white border border-gray-200 rounded-lg px-4 py-3 font-medium focus:ring-2 focus:ring-purple-500 placeholder-gray-400 text-black resize-none"
+                                        />
+                                        {/* Validation Warning */}
+                                        {transcript.trim() === "" && (
+                                            <p className="text-amber-600 text-sm flex items-center gap-1">
+                                                ⚠️ กรุณาวาง Transcript ก่อนสร้างคำสั่ง
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-gray-500">
+                                            💡 Tip: ใช้ YouTube transcript หรือ Whisper AI ถอดเสียง
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Section: Video Summarizer - Summary Tone */}
+                        {contentType === "video-summary" && (
+                            <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                                <h3 className="font-bold text-black text-lg flex items-center gap-2">
+                                    🎨 โทนการสรุป
+                                </h3>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {SUMMARY_TONES.map(tone => (
+                                        <button
+                                            key={tone.value}
+                                            onClick={() => setSummaryTone(tone.value)}
+                                            className={`p-3 rounded-xl text-center transition-all border-2 ${summaryTone === tone.value
+                                                ? "bg-purple-50 border-purple-500 shadow-sm"
+                                                : "bg-white hover:bg-gray-50 border-gray-100 hover:border-gray-200"
+                                                }`}
+                                        >
+                                            <div className="text-2xl mb-1">{tone.icon}</div>
+                                            <div className="font-bold text-sm text-gray-800">{tone.label}</div>
+                                            <p className={`text-xs mt-1 ${summaryTone === tone.value ? "text-purple-700" : "text-gray-400"}`}>
+                                                {tone.description}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Section: Question Type & Mode (Geometry Support) */}
                         {(contentType === "exam" || contentType === "exercise") && (

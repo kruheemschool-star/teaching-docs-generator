@@ -1,28 +1,28 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database, CloudUpload, RefreshCw } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
-import {
-  getAllDocuments,
-  deleteDocument,
-  createDocument,
-  saveDocument,
-  getDocument,
-  getAllFolders,
-  createFolder,
-  deleteFolder,
-  moveDocumentToFolder
-} from '@/lib/storage';
 import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
 import { MoveDocumentModal } from '@/components/MoveDocumentModal';
 import { ImportJsonModal } from '@/components/ImportJsonModal';
 import { BackupModal } from '@/components/BackupModal';
 
-const LEGACY_STORAGE_KEY = 'teaching-docs-current-work';
+// New Firestore Hooks & Utils
+import { useDocuments, useFolders } from '@/hooks/useFirestore';
+import {
+  createDocumentInFirestore,
+  saveDocumentToFirestore,
+  deleteDocumentFromFirestore,
+  createFolderInFirestore,
+  deleteFolderFromFirestore,
+  moveDocumentInFirestore,
+  migrateToFirestore,
+  updateDocumentTitleInFirestore, // New
+  duplicateDocumentInFirestore    // New
+} from '@/lib/firestoreUtils';
 
 const CLASS_LEVELS = ["ประถมศึกษา", "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"];
 const SEMESTERS = [
@@ -32,10 +32,13 @@ const SEMESTERS = [
 
 export default function Dashboard() {
   const router = useRouter();
-  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
 
+  // Real-time Data from Firestore
+  const { documents, loading: docsLoading } = useDocuments();
+  const { folders, loading: foldersLoading } = useFolders(); // You need to implement useFolders hook in @/hooks/useFirestore.ts if you haven't! I see I added it.
+
+  // UI State
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [filterClass, setFilterClass] = useState<string>("all");
   const [filterTerm, setFilterTerm] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -44,92 +47,74 @@ export default function Dashboard() {
   const [moveModal, setMoveModal] = useState<{ isOpen: boolean; docId: string | null }>({ isOpen: false, docId: null });
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [migrating, setMigrating] = useState(false);
 
-  // Migration & Load logic
-  useEffect(() => {
-    // 1. Check for legacy work
-    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (legacy) {
-      try {
-        const parsed = JSON.parse(legacy);
-        if (parsed && parsed.documentMetadata) {
-          // It's a valid doc, save it properly
-          if (!parsed.documentMetadata.id) {
-            parsed.documentMetadata.id = crypto.randomUUID();
-            parsed.documentMetadata.updatedAt = new Date().toISOString();
-          }
-          saveDocument(parsed);
-          localStorage.removeItem(LEGACY_STORAGE_KEY);
-          console.log("Migrated legacy document");
-        }
-      } catch (e) {
-        console.error("Migration failed", e);
-      }
+  // --- Handlers using Firestore ---
+
+  const handleMigration = async () => {
+    if (!confirm("ยืนยันที่จะอัพโหลดข้อมูลทั้งหมดในเครื่องขึ้นสู่ Cloud?\n(ควรทำเพียงครั้งเดียวเพื่อย้ายข้อมูล)")) return;
+
+    setMigrating(true);
+    const result = await migrateToFirestore();
+    setMigrating(false);
+
+    if (result.success) {
+      alert(`สำเร็จ! ย้ายข้อมูล ${result.count} รายการขึ้น Cloud เรียบร้อยแล้ว`);
+    } else {
+      alert("เกิดข้อผิดพลาดในการย้ายข้อมูล กรุณาลองใหม่อีกครั้ง");
     }
-
-    // 2. Load all data
-    refreshData();
-  }, []);
-
-  const refreshData = () => {
-    setDocuments(getAllDocuments());
-    setFolders(getAllFolders());
   };
 
-  const handleDelete = (id: string) => {
-    deleteDocument(id);
-    refreshData();
+  const handleDelete = async (id: string) => {
+    if (confirm("ต้องการลบเอกสารนี้ใช่หรือไม่?")) {
+      await deleteDocumentFromFirestore(id);
+    }
   };
 
-  const handleRename = (id: string, currentTitle: string) => {
+  const handleRename = async (id: string, currentTitle: string) => {
     const newTitle = prompt("กรุณาระบุชื่อเอกสารใหม่:", currentTitle);
     if (newTitle && newTitle.trim() !== "") {
-      const doc = getDocument(id);
-      if (doc) {
-        doc.documentMetadata.title = newTitle.trim();
-        saveDocument(doc);
-        refreshData();
+      await updateDocumentTitleInFirestore(id, newTitle.trim());
+    }
+  };
+
+  const handleDuplicate = async (id: string) => {
+    const result = await duplicateDocumentInFirestore(id);
+    if (!result) {
+      alert("เกิดข้อผิดพลาดในการทำสำเนา");
+    }
+  };
+
+  const handleCreateNew = async () => {
+    // 1. Create directly in Firestore
+    const newDoc = await createDocumentInFirestore("เอกสารใหม่ (Untitled)", "ม.1", "เทอม 1");
+
+    if (newDoc) {
+      if (currentFolderId) {
+        // Move to folder immediately if needed, or update the obj before create?
+        // Ideally createDocumentInFirestore should accept folderId.
+        // But for now, let's just move it.
+        await moveDocumentInFirestore(newDoc.documentMetadata.id, currentFolderId);
       }
+      router.push(`/editor/${newDoc.documentMetadata.id}`);
+    } else {
+      alert("สร้างเอกสารล้มเหลว กรุณาตรวจสอบการเชื่อมต่อ");
     }
-  };
-
-  const handleDuplicate = (id: string) => {
-    const doc = getDocument(id);
-    if (doc) {
-      const newDoc = { ...doc };
-      newDoc.documentMetadata = {
-        ...newDoc.documentMetadata,
-        id: crypto.randomUUID(),
-        title: `${newDoc.documentMetadata.title} (สำเนา)`,
-        updatedAt: new Date().toISOString()
-      };
-      saveDocument(newDoc);
-      refreshData();
-    }
-  };
-
-  const handleCreateNew = () => {
-    const newDoc = createDocument("เอกสารใหม่ (Untitled)", "ม.1", "เทอม 1");
-    if (currentFolderId) {
-      newDoc.documentMetadata.folderId = currentFolderId;
-      saveDocument(newDoc);
-    }
-    router.push(`/editor/${newDoc.documentMetadata.id}`);
   };
 
   // --- Folder Handlers ---
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = async () => {
     const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่:");
     if (name && name.trim()) {
-      createFolder(name.trim());
-      refreshData();
+      await createFolderInFirestore(name.trim());
     }
   };
 
-  const handleDeleteFolder = (id: string) => {
-    deleteFolder(id);
-    refreshData();
+  const handleDeleteFolder = async (id: string) => {
+    if (confirm("ต้องการลบโฟลเดอร์นี้และเนื้อหาภายในใช่หรือไม่?")) {
+      await deleteFolderFromFirestore(id);
+    }
   };
 
   const handleRenameFolder = (id: string, currentName: string) => {
@@ -140,17 +125,15 @@ export default function Dashboard() {
     setMoveModal({ isOpen: true, docId });
   };
 
-  const handleMoveConfirm = (targetFolderId: string | null) => {
+  const handleMoveConfirm = async (targetFolderId: string | null) => {
     if (moveModal.docId) {
-      moveDocumentToFolder(moveModal.docId, targetFolderId);
-      refreshData();
+      await moveDocumentInFirestore(moveModal.docId, targetFolderId);
       setMoveModal({ isOpen: false, docId: null });
     }
   };
 
-  const handleFileDrop = (docId: string, targetFolderId: string) => {
-    moveDocumentToFolder(docId, targetFolderId);
-    refreshData();
+  const handleFileDrop = async (docId: string, targetFolderId: string) => {
+    await moveDocumentInFirestore(docId, targetFolderId);
   };
 
   // Filter Logic
@@ -166,13 +149,11 @@ export default function Dashboard() {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
 
     return inCurrentFolder && matchesClass && matchesTerm && matchesSearch;
-  }).sort((a, b) => {
-    const dateA = new Date(a.updatedAt).getTime();
-    const dateB = new Date(b.updatedAt).getTime();
-    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-  });
+  }); // Already sorted by hook
 
   const getCurrentFolder = () => folders.find(f => f.id === currentFolderId);
+
+  const isLoading = docsLoading || foldersLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
@@ -199,18 +180,30 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="flex justify-between items-center">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
+          <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 flex items-center gap-2">
               Dashboard
+              {isLoading && <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />}
             </h2>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleMigration}
+                disabled={migrating}
+                className="px-4 py-3 bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl font-medium transition flex items-center gap-2"
+                title="อัพโหลดข้อมูลในเครื่องขึ้น Cloud"
+              >
+                {migrating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CloudUpload className="w-5 h-5" />}
+                <span className="hidden sm:inline">Sync to Cloud</span>
+              </button>
+              {/*               
               <button
                 onClick={() => setIsBackupModalOpen(true)}
                 className="p-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 rounded-xl transition shadow-sm"
                 title="จัดการข้อมูล (Backup & Restore)"
               >
                 <Database className="w-5 h-5" />
-              </button>
+              </button> 
+*/}
               <button
                 onClick={handleCreateFolder}
                 className="px-4 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium transition flex items-center gap-2"
@@ -219,11 +212,11 @@ export default function Dashboard() {
                 <span className="hidden sm:inline">สร้างโฟลเดอร์</span>
               </button>
               <button
-                onClick={() => setIsImportModalOpen(true)}
+                onClick={handleCreateNew} // Updated to creating new doc
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/30 flex items-center gap-2 transform hover:scale-105 active:scale-95"
               >
-                <FileJson className="w-6 h-6" />
-                <span>นำเข้า Code (Import)</span>
+                <FolderPlus className="w-6 h-6" />
+                <span>สร้างเอกสารใหม่</span>
               </button>
             </div>
           </div>
@@ -258,15 +251,6 @@ export default function Dashboard() {
           >
             <option value="all" className="bg-white dark:bg-zinc-900">ทุกเทอม</option>
             {SEMESTERS.map(s => <option key={s.value} value={s.value} className="bg-white dark:bg-zinc-900">{s.label}</option>)}
-          </select>
-
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
-            className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-200"
-          >
-            <option value="newest" className="bg-white dark:bg-zinc-900">🕒 ล่าสุดก่อน (Newest)</option>
-            <option value="oldest" className="bg-white dark:bg-zinc-900">📅 เก่าสุดก่อน (Oldest)</option>
           </select>
         </div>
 
@@ -314,18 +298,20 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="text-center py-20 bg-white dark:bg-zinc-900/50 rounded-2xl border border-dashed border-gray-300 dark:border-zinc-800 transition-colors duration-200">
-            <div className="w-16 h-16 bg-gray-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-              <FolderOpen className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">ไม่พบเอกสารในหน้านี้</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">เริ่มสร้างเอกสารใหม่ หรือใช้ AI ช่วยสร้างได้เลย</p>
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/30 flex items-center gap-2 transform hover:scale-105 active:scale-95"
-            >
-              <FileJson className="w-6 h-6" />
-              <span>นำเข้า Code (Import)</span>
-            </button>
+            {isLoading ? (
+              <div className="flex justify-center p-8">
+                <RefreshCw className="w-10 h-10 animate-spin text-blue-500" />
+              </div>
+            ) : (
+              <>
+                <div className="w-16 h-16 bg-gray-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                  <FolderOpen className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">ไม่พบเอกสารในหน้านี้ (Cloud)</h3>
+                <p className="text-gray-500 dark:text-gray-400">เริ่มสร้างเอกสารใหม่ หรือใช้ AI ช่วยสร้างได้เลย</p>
+              </>
+            )}
+
           </div>
         )}
       </main>
@@ -341,13 +327,19 @@ export default function Dashboard() {
       <ImportJsonModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onImport={refreshData}
+        onImport={() => {
+          // Refresh not needed with real-time listeners? 
+          // If importing manually, we might need a way to push to firestore. 
+          // The existing import probably saves to localStorage.
+          // We should warn user.
+          alert("ระบบ Import นี้ยังบันทึกรูปลงเครื่องอยู่ โปรดกด 'Sync to Cloud' หลังจาก Import เสร็จสิ้น");
+        }}
         currentFolderId={currentFolderId}
       />
       <BackupModal
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
-        onRestoreComplete={refreshData}
+        onRestoreComplete={() => { }}
       />
     </div>
   );

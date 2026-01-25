@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Copy, Check, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Copy, Check, ArrowLeft, ExternalLink, Sparkles, FileText, GraduationCap, BookOpen } from "lucide-react";
 import Link from "next/link";
 import {
     ClassLevel,
@@ -98,7 +98,34 @@ const SUMMARY_TONES: { value: SummaryTone; label: string; icon: string; descript
     { value: "exam-prep", label: "ติวสอบ", icon: "📚", description: "เน้นจุดที่ออกสอบบ่อย เทคนิคจำง่าย" },
 ];
 
+const QUICK_TEMPLATES = [
+    {
+        id: "summary-lesson",
+        label: "สรุปเนื้อหาเตรียมสอบ",
+        icon: FileText,
+        color: "blue",
+        text: "สรุปเนื้อหา [ระบุวิชา] เรื่อง [ระบุเรื่อง] สำหรับเตรียมสอบ เน้นจุดสำคัญและสูตรที่ต้องจำ"
+    },
+    {
+        id: "exam-generator",
+        label: "ออกข้อสอบพร้อมเฉลย",
+        icon: GraduationCap,
+        color: "purple",
+        text: "ข้อสอบ [ระบุวิชา] เรื่อง [ระบุเรื่อง] จำนวน 10 ข้อ คละความยาก พร้อมเฉลยละเอียดและวิธีทำ"
+    },
+    {
+        id: "teaching-plan",
+        label: "แผนการสอนครู",
+        icon: BookOpen,
+        color: "green",
+        text: "แผนการสอน [ระบุวิชา] เรื่อง [ระบุเรื่อง] แบบ Active Learning เน้นกิจกรรมและการมีส่วนร่วม"
+    }
+];
+
 export default function PromptBuilder() {
+    // Refs
+    const customTopicRef = useRef<HTMLInputElement>(null);
+
     // Form state
     const [classLevel, setClassLevel] = useState<ClassLevel>("ม.1");
     const [semester, setSemester] = useState<Semester>("semester1");
@@ -173,6 +200,27 @@ export default function PromptBuilder() {
         setTopic("");
         setCustomTopic("");
     }, [classLevel, semester, subjectType]);
+
+    const handleUseTemplate = (templateId: string) => {
+        const template = QUICK_TEMPLATES.find(t => t.id === templateId);
+        if (template) {
+            setTopic(""); // Clear standard topic
+            setCustomTopic(template.text); // Set the custom topic text
+
+            // Allow state to update then focus and highlight
+            setTimeout(() => {
+                if (customTopicRef.current) {
+                    customTopicRef.current.focus();
+                    // Try to highlight [ระบุวิชา]
+                    const start = template.text.indexOf("[");
+                    const end = template.text.indexOf("]");
+                    if (start >= 0 && end > start) {
+                        customTopicRef.current.setSelectionRange(start, end + 1);
+                    }
+                }
+            }, 100);
+        }
+    };
 
     // Generate prompt when any relevant state changes
     useEffect(() => {
@@ -642,6 +690,27 @@ Example JSON Structure:
                     </div>
                 </div>
 
+                {/* Quick Start Templates */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    {QUICK_TEMPLATES.map((template) => (
+                        <button
+                            key={template.id}
+                            onClick={() => handleUseTemplate(template.id)}
+                            className={`relative group bg-white p-4 rounded-2xl border-2 border-${template.color}-100 hover:border-${template.color}-500 shadow-sm hover:shadow-md transition-all text-left flex flex-col items-center justify-center gap-3`}
+                        >
+                            <div className={`p-3 rounded-full bg-${template.color}-50 text-${template.color}-600 group-hover:bg-${template.color}-100 transition-colors`}>
+                                <template.icon className="w-6 h-6" />
+                            </div>
+                            <div className="text-center">
+                                <h3 className="font-bold text-gray-800">{template.label}</h3>
+                            </div>
+                            <div className={`absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-${template.color}-500`}>
+                                <Sparkles className="w-4 h-4" />
+                            </div>
+                        </button>
+                    ))}
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* Form */}
                     <div className="lg:col-span-5 space-y-6">
@@ -747,6 +816,7 @@ Example JSON Structure:
                                 </label>
                                 <input
                                     type="text"
+                                    ref={customTopicRef}
                                     value={customTopic}
                                     onChange={(e) => {
                                         setCustomTopic(e.target.value);

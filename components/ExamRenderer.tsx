@@ -33,62 +33,60 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
     const sizeOption = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl'; // Options default (already bumped once)
 
     return (
-        <div className={`mb-8 section-exam break-inside-avoid ${section.pageBreakBefore ? 'break-before-page' : ''}`}>
+        <div className={`mb-10 section-exam break-inside-avoid ${section.pageBreakBefore ? 'break-before-page' : ''}`}>
             {section.title && (
-                <h2 className={`${sizeTitle} font-bold border-b-2 border-gray-800 pb-1 mb-4`}>
+                <h2 className={`${sizeTitle} font-bold text-[#37352F] mb-6 tracking-tight`}>
                     {section.title}
                 </h2>
             )}
 
-            <div className="grid grid-cols-1 gap-0">
+            <div className="grid grid-cols-1 gap-8">
                 {section.questions.map((q, qIndex) => (
-                    <div key={q.id || qIndex} className="break-inside-avoid py-6 border-b border-gray-100 last:border-0 flex flex-col justify-between">
-                        <div className={`flex gap-2 mb-4 font-medium ${sizeNumber}`}>
-                            <span className="font-bold whitespace-nowrap">{qIndex + 1}.</span>
+                    <div key={q.id || qIndex} className="break-inside-avoid flex flex-col justify-between group">
+                        {/* Question Header */}
+                        <div className={`flex gap-3 mb-3 font-medium ${sizeNumber} text-[#37352F]`}>
+                            <span className="font-bold whitespace-nowrap opacity-60">{qIndex + 1}.</span>
                             <div className="flex-1">
-                                <div className="mb-4">
+                                <div className="mb-3">
                                     {q.difficulty && getDifficultyBadge(q.difficulty, fontSizeLevel)}
-                                    <div className={`inline text-gray-900 leading-relaxed ${sizeText}`}>
+                                    <div className={`inline leading-relaxed ${sizeText}`}>
                                         <RichText content={q.text} />
                                     </div>
 
                                     {/* SVG Graphic Rendering */}
                                     {q.graphic_code && (
-                                        <div className="my-6 flex justify-center">
+                                        <div className="my-4 flex justify-start">
                                             <div
-                                                className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
+                                                className="bg-white p-4 rounded border border-[#E1E1E0] flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
                                                 dangerouslySetInnerHTML={{ __html: q.graphic_code }}
                                             />
                                         </div>
                                     )}
                                 </div>
-                                <div className="space-y-3 ml-2">
+
+                                {/* Options */}
+                                <div className="space-y-2 ml-1">
                                     {q.options && q.options.map((opt, oIndex) => {
                                         const isCorrect = q.correctOption === oIndex;
-
-                                        // Handle backward compatibility (string vs object)
                                         const isString = typeof opt === 'string';
                                         const text = isString ? opt : opt.text;
-                                        // Use "any" cast to safely access graphic_code on union type without strict check complexities
                                         const graphicCode = !isString ? (opt as any).graphic_code : undefined;
 
                                         return (
-                                            <div key={oIndex} className={`flex items-start gap-3 ${sizeOption} group`}>
-                                                <div className="mt-1 shrink-0 transition-transform group-hover:scale-110">
+                                            <div key={oIndex} className={`flex items-start gap-3 ${sizeOption} px-3 py-1.5 rounded-md transition-colors ${showAnswers && isCorrect ? 'bg-[#edf9f0]' : 'hover:bg-[#F1F1EF]'}`}>
+                                                <div className="mt-[0.2em] shrink-0">
                                                     {showAnswers && isCorrect ? (
                                                         <CheckCircle2 className="w-5 h-5 text-green-600" />
                                                     ) : (
-                                                        <Circle className="w-5 h-5 text-gray-300 group-hover:text-gray-400" />
+                                                        <div className="w-4 h-4 rounded-full border border-gray-400 mt-1"></div>
                                                     )}
                                                 </div>
-                                                <div className={`leading-relaxed w-full ${showAnswers && isCorrect ? 'font-bold text-green-700' : 'text-gray-700'}`}>
+                                                <div className={`leading-relaxed w-full ${showAnswers && isCorrect ? 'font-medium text-[#37352F]' : 'text-[#37352F]'}`}>
                                                     <RichText content={text} />
-
-                                                    {/* Option Graphic (e.g. for Geometry choices) */}
                                                     {graphicCode && (
                                                         <div className="mt-2 mb-2">
                                                             <div
-                                                                className="bg-white p-2 rounded border border-gray-100 shadow-sm flex min-w-[200px] [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[150px]"
+                                                                className="bg-white p-2 rounded border border-[#E1E1E0] flex min-w-[200px] [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[150px]"
                                                                 dangerouslySetInnerHTML={{ __html: graphicCode }}
                                                             />
                                                         </div>
@@ -101,26 +99,28 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
                             </div>
                         </div>
 
-                        {/* Explanation */}
+                        {/* Explanation (Notion Callout Style) */}
                         {q.explanation && (
-                            <div className={`mt-4 pl-4 py-3 pr-4 border-l-4 rounded-r-md transition-all
+                            <div className={`mt-3 rounded-md transition-all
                                 ${showAnswers
-                                    ? 'bg-gray-50 border-gray-300 text-gray-800'
-                                    : 'invisible-box text-invisible select-none border-transparent'
+                                    ? 'bg-[#F1F1EF] p-4 text-[#37352F] flex gap-3'
+                                    : 'h-0 opacity-0 overflow-hidden'
                                 }`}>
                                 {showAnswers && (
-                                    <div className="flex gap-3">
-                                        <div className="shrink-0 mt-0.5 text-gray-500">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 11-6 6v3h9l3-3" /><path d="m11.6 16.8a3 3 0 1 1-5.8-1.6" /><path d="m18 2h6v6" /><path d="m2 22h6v-6" /><path d="m9 22v-3h3" /><path d="m20 22v-3h3" /></svg>
-                                        </div>
+                                    <>
+                                        <div className="shrink-0 text-xl">💡</div>
                                         <div className={`leading-relaxed ${sizeText}`}>
-                                            <span className={`font-bold text-gray-700 block mb-1 ${sizeText}`}>เฉลยละเอียด</span>
+                                            <span className="font-bold mb-1 opacity-70 block text-xs uppercase tracking-wider">Solution</span>
                                             <RichText content={q.explanation} />
                                         </div>
-                                    </div>
+                                    </>
                                 )}
-                                {!showAnswers && <RichText content={q.explanation} />}
                             </div>
+                        )}
+
+                        {/* Divider */}
+                        {qIndex < section.questions.length - 1 && (
+                            <div className="h-px bg-[#E1E1E0] mt-6 w-full"></div>
                         )}
                     </div>
                 ))}

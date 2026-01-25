@@ -297,21 +297,37 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white dark:bg-zinc-900/50 rounded-2xl border border-dashed border-gray-300 dark:border-zinc-800 transition-colors duration-200">
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in zoom-in duration-500">
             {isLoading ? (
               <div className="flex justify-center p-8">
                 <RefreshCw className="w-10 h-10 animate-spin text-blue-500" />
               </div>
             ) : (
-              <>
-                <div className="w-16 h-16 bg-gray-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                  <FolderOpen className="w-8 h-8" />
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-10 max-w-lg w-full border border-gray-100 dark:border-zinc-800 shadow-xl shadow-gray-200/50 dark:shadow-none">
+                <div className="w-24 h-24 bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-slow">
+                  <span className="text-4xl">✨</span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">ไม่พบเอกสารในหน้านี้ (Cloud)</h3>
-                <p className="text-gray-500 dark:text-gray-400">เริ่มสร้างเอกสารใหม่ หรือใช้ AI ช่วยสร้างได้เลย</p>
-              </>
-            )}
 
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                  ยังไม่มีเอกสารที่นี่
+                </h3>
+
+                <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
+                  เริ่มต้นสร้างสื่อการสอนชิ้นแรกของคุณได้ง่ายๆ<br />
+                  ด้วยพลัง AI หรือเขียนเองตามใจชอบ
+                </p>
+
+                <button
+                  onClick={handleCreateNew}
+                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transform hover:-translate-y-1 flex items-center justify-center gap-3"
+                >
+                  <div className="p-1 bg-white/20 rounded-lg">
+                    <FolderPlus className="w-6 h-6" />
+                  </div>
+                  <span>เริ่มสร้างเอกสารชิ้นแรก</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>

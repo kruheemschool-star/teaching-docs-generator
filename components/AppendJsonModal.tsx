@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { X, FileJson, Check, PlusCircle, AlertCircle } from 'lucide-react';
 import { Section } from '@/types';
+import { SmartJsonEditor } from './SmartJsonEditor';
 
 interface AppendJsonModalProps {
     isOpen: boolean;
@@ -23,35 +23,35 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
                 return;
             }
 
-            // --- ROBUST CLEANING STRATEGY ---
+            let data;
 
-            // 1. Remove Markdown Code Blocks
-            let cleanJson = jsonContent
-                .replace(/^```json\s*/g, '')
-                .replace(/^```\s*/g, '')
-                .replace(/\s*```$/g, '')
-                .trim();
+            // Try parsing raw content first (Smart Editor likely already fixed it)
+            try {
+                data = JSON.parse(jsonContent);
+            } catch (initialParseError) {
+                // --- ROBUST CLEANING STRATEGY (Fallback) ---
 
-            // 2. Remove Citation Artifacts (GLOBAL REMOVAL)
-            // Remove [cite:...] patterns indiscriminately to prevent syntax errors
-            cleanJson = cleanJson
-                .replace(/\[cite\s*[:_]?\s*\d+.*?\]/gi, '')
-                .replace(/\[cite.*?\]/gi, '')
-                .replace(/\[source.*?\]/gi, '')
-                .replace(/【\d+:\d+†source】/g, '');
+                // 1. Remove Markdown Code Blocks
+                let cleanJson = jsonContent
+                    .replace(/^```json\s*/g, '')
+                    .replace(/^```\s*/g, '')
+                    .replace(/\s*```$/g, '')
+                    .trim();
 
-            // 3. Fix Common AI JSON Malformations
-            // 3.1 Fix Single Quoted Keys (e.g., 'key': -> "key":)
-            cleanJson = cleanJson.replace(/'([^']+)'\s*:/g, '"$1":');
+                // 2. Remove Citation Artifacts (GLOBAL REMOVAL)
+                cleanJson = cleanJson
+                    .replace(/\[cite\s*[:_]?\s*\d+.*?\]/gi, '')
+                    .replace(/\[cite.*?\]/gi, '')
+                    .replace(/\[source.*?\]/gi, '')
+                    .replace(/【\d+:\d+†source】/g, '');
 
-            // 3.2 Fix Unquoted Keys (e.g., key: -> "key":) - simple cases only
-            // Caution: Avoid replacing protocol parts like http:
-            cleanJson = cleanJson.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+                // 3. Fix Common AI JSON Malformations
+                cleanJson = cleanJson.replace(/'([^']+)'\s*:/g, '"$1":');
+                cleanJson = cleanJson.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+                cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
 
-            // 3.3 Fix Trailing Commas (e.g., { a:1, } -> { a:1 })
-            cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
-
-            let data = JSON.parse(cleanJson);
+                data = JSON.parse(cleanJson);
+            }
             let sectionsToAppend: Section[] = [];
 
             // Case 1: Full Document Structure -> Extract sections
@@ -130,15 +130,16 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
                         </p>
                     </div>
 
-                    <textarea
-                        className="w-full h-64 p-4 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl font-mono text-xs focus:ring-2 focus:ring-green-500 outline-none resize-none"
-                        placeholder='วางโค้ดตรงนี้ (วางได้ทั้งแบบ Array หรือ Document)...'
-                        value={jsonContent}
-                        onChange={(e) => setJsonContent(e.target.value)}
-                    />
+                    <div className="h-80 mb-4">
+                        <SmartJsonEditor
+                            value={jsonContent}
+                            onChange={(val) => setJsonContent(val)}
+                            onValidChange={(isValid) => setError(isValid ? null : 'รูปแบบ JSON ยังไม่ถูกต้อง')}
+                        />
+                    </div>
 
-                    {error && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+                    {error && error !== 'รูปแบบ JSON ยังไม่ถูกต้อง' && (
+                        <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2 animate-in slide-in-from-top-2">
                             <AlertCircle className="w-4 h-4" />
                             {error}
                         </div>

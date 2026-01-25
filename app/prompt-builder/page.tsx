@@ -28,7 +28,7 @@ type QuestionMode = "example" | "exercise";
 type QuestionStyle = "general" | "ipst" | "onet" | "competition" | "olympiad";
 
 // Video Summarizer Types
-type InputSourceType = "topic" | "transcript";
+type InputSourceType = "topic" | "transcript" | "youtube";
 type SummaryTone = "easy" | "intensive" | "exam-prep";
 
 const DIFFICULTIES: { value: Difficulty; label: string; icon: string; description: string }[] = [
@@ -168,6 +168,7 @@ export default function PromptBuilder() {
     // Video Summarizer State
     const [inputSource, setInputSource] = useState<InputSourceType>("topic");
     const [transcript, setTranscript] = useState("");
+    const [youtubeUrl, setYoutubeUrl] = useState("");
     const [summaryTone, setSummaryTone] = useState<SummaryTone>("easy");
 
     // Mixed Difficulty Distribution
@@ -177,6 +178,33 @@ export default function PromptBuilder() {
         advanced: 3,
         wordProblem: 0
     });
+
+    // Auto-clear logic when content type changes
+    useEffect(() => {
+        // Reset Video Summary fields
+        if (contentType !== "video-summary") {
+            setInputSource("topic");
+            setTranscript("");
+            setYoutubeUrl("");
+        }
+
+        // Reset Exam/Exercise fields
+        if (contentType !== "exam" && contentType !== "exercise") {
+            setQuestionType("text");
+            // Reset to defaults
+            setDifficulty("intermediate");
+            setQuestionStyle("general");
+            setItemCount(10);
+
+            // Also reset mixed distribution if needed, though hidden
+            setDifficultyDistribution({
+                basic: 3,
+                intermediate: 4,
+                advanced: 3,
+                wordProblem: 0
+            });
+        }
+    }, [contentType]);
 
     // Update itemCount when mixed distribution changes
     useEffect(() => {
@@ -225,7 +253,7 @@ export default function PromptBuilder() {
     // Generate prompt when any relevant state changes
     useEffect(() => {
         generatePrompt();
-    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount, questionType, questionMode, questionStyle, inputSource, transcript, summaryTone]);
+    }, [topic, customTopic, classLevel, semester, subjectType, contentType, difficulty, teachingStyle, itemCount, writingTone, contentElements, teachingApproach, lessonDepth, includeExamples, includePractice, subTopic, exampleStyle, creationMethod, additionalInstructions, difficultyDistribution, exampleCount, practiceCount, questionType, questionMode, questionStyle, inputSource, transcript, youtubeUrl, summaryTone]);
 
     const getDisplayGradeLevel = () => {
         const levelInfo = CLASS_LEVELS.find(l => l.value === classLevel);
@@ -410,255 +438,145 @@ If the content requires a graph, geometric shape, or diagram to be understood (e
 
         const additionalText = additionalInstructions ? `\n\nADDITIONAL INSTRUCTIONS: ${additionalInstructions}` : "";
 
-        // Core instruction
+        // Core instruction - Updated for New JSON Schemas
         const baseInstruction = `You are an expert Thai mathematics teacher assistant. Create a JSON file for a teaching document about "${topicText}" for ${gradeText} students.${subTopicText}${methodInstruction}${additionalText}
 
 ${contentType === "lesson" || contentType === "lecture" ? `WRITING TONE: ${getWritingToneInstruction()}` : `${getDifficultyInstruction()}${getTeachingStyleInstruction()}${getQuestionStyleInstruction()}`}
 
-Strictly output ONLY valid JSON code inside a markdown code block (\`\`\`json ... \`\`\`) for easy copying. Do not include any additional text outside the code block.
-The JSON must follow this exact typescript interface structure:
+IMPORTANT CONSTRAINTS (Follow strictly):
+1. NO MARKDOWN: Output strictly RAW JSON. Do NOT wrap with \`\`\`json ... \`\`\`. Just start with { and end with }.
+2. MATH FORMAT: Use LaTeX for ALL mathematical formulas and equations (e.g., \\frac{1}{2}, x^2, \\sqrt{x}).
+3. CONSISTENCY: Do NOT change the keys (variable names). Use the exact keys provided in the interface.
+4. LANGUAGE: The content must be in THAI (except for specific English mathematical terms).
 
-interface CourseDocument {
-  documentMetadata: {
-    title: string;
-    subtitle: string;
-    instructor: string;
-    date: string;
-  };
-  sections: Section[];
-}
-
+The JSON must follow this exact typescript interface structure based on the content type:
 `;
 
         let typeSpecificInstruction = "";
+        let jsonStructureExample = "";
 
-        if (contentType === "exam") {
-            if (questionType === "geometry") {
-                typeSpecificInstruction = `
-type Option = string | { text: string; graphic_code?: string };
+        if (contentType === "exam" || contentType === "exercise") {
+            const isGeometry = questionType === "geometry";
 
-type Section = {
-  type: "exam";
-  id: string;
-  title: string;
-  questions: {
-    id: number;
-    question: string; // The problem text (use LaTeX for math)
-    graphic_code: string; // COMPLETE SVG CODE <svg>...</svg>
-    explanation: string; // Detailed solution with LaTeX
-    difficulty: '${difficulty === "mixed" ? "Mixed" : difficulty}';
-    ${questionMode === "example" ? "" : "options?: Option[]; correctOption?: number;"}
-  }[];
-};
-
-Make sure to create exactly ${itemCount} geometry problems.
-
-CRITICAL INSTRUCTION FOR GRAPHIC_CODE (SVG):
-1. You MUST write COMPLETE SVG CODE including the opening <svg> and closing </svg> tags.
-2. **Professional Look:** Create mathematical diagrams that are clean, professional, and easy to read.
-3. **Canvas & Padding:** Use a large viewBox="0 0 500 500". Draw the shape in the center, leaving at least 10-20% padding from the edges. Do NOT draw on the very edge.
-4. **Line Weight:**
-   - **Main Outline:** Use 'stroke-width="2.5"' or '3' for the main geometric shapes (High visibility).
-   - **Details/Dimensions:** Use 'stroke-width="1.5"' for dimension lines, dashed lines, or angle markers.
-5. **Text Placement:**
-   - **Do NOT place text directly on lines or points.**
-   - Calculate an offset for labels (A, B, C, etc.) so they "float" near the point but don't touch it.
-   - Use a clear sans-serif font (e.g., Arial).
-   - Font-size: Large (e.g., 20-24px) for readability.
-6. **Styling:**
-   - Stroke: black
-   - Fill: none (transparent) or light gray (#f5f5f5) for shaded areas.
-   - Do NOT use external images. DRAW EVERYTHING with SVG paths.
-
-${questionMode === "exercise" ? "IMPORTANT: This is an EXERCISE. Provide options. Options can be simple strings or objects if they need images (SVG). If an option includes a shape/diagram, use the object format: { text: 'Option A', graphic_code: '<svg>...</svg>' }." : "IMPORTANT: This is an EXAMPLE. Show the full detailed solution."}
-`;
-            } else {
-                typeSpecificInstruction = `
-type Section = {
-  type: "exam";
-  id: string;
-  title: string;
-  questions: {
-    text: string;
-    graphic_code?: string; // Optional SVG code if needed
-    options: string[]; // Array of 4 strings
-    correctOption: number; // 0-3
-    explanation: string; // Detailed explanation for the answer
-    difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
-  }[];
-};
-
-Make sure to create exactly ${itemCount} multiple-choice questions with 4 options each.
-IMPORTANT: The 'explanation' field MUST be EXTREMELY DETAILED and EASY TO UNDERSTAND.
-   - Explain every single step of the calculation/logic clearly.
-   - MUST include a "Caution" (ข้อควรระวัง) or "Common Mistake" point in the explanation to warn students.
-   - Do not just say "A is correct". Show the full work.
-IMPORTANT: For EVERY question, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
-`;
-            }
-        } else if (contentType === "exercise") {
-            if (questionType === "geometry") {
-                typeSpecificInstruction = `
-type Section = {
-  type: "exercise";
-  id: string;
-  title: string;
-  items: {
-    id: number;
-    question: string;
-    graphic_code: string; // SVG Code
-    detailedSolution: string;
-    answer: string;
-    difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา';
-  }[];
-};
-
-Make sure to create exactly ${itemCount} practice geometry problems.
-FOLLOW THE SAME SVG INSTRUCTIONS AS ABOVE.
-`;
-            } else {
-                typeSpecificInstruction = `
-type Section = {
-  type: "exercise";
-  id: string;
-  title: string;
-  items: {
-    question: string;
-    graphic_code?: string; // Optional SVG code
-    answer: string; // The correct answer
-    detailedSolution: string; // Full step-by-step solution method
-    difficulty: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
-  }[];
-};
-
-Make sure to create exactly ${itemCount} practice questions.
-IMPORTANT: The 'detailedSolution' MUST be EXTREMELY DETAILED and EASY TO UNDERSTAND.
-   - Show the full STEP-BY-STEP calculation method.
-   - MUST include a "Caution" (ข้อควรระวัง) or "Key Trick" to help students solve it faster or avoid mistakes.
-IMPORTANT: For EVERY item, clearly specify the 'difficulty' level ('ง่าย', 'ปานกลาง', 'ยาก', or 'โจทย์ปัญหา').
-IMPORTANT: Do NOT include 'spaceForWork' or 'lines'.
-`;
-            }
-        } else if (contentType === "lecture") {
             typeSpecificInstruction = `
-type Section = {
-  type: "lecture";
-  id: string;
-  title: string;
-  content: string; // Markdown supported content with LaTeX math support
-  keyPoints: string[]; // Summary list
-  difficulty?: string;
-};
+// Schema for Exam & Exercise
+interface ExamExerciseContent {
+  content_type: "${contentType}"; // "exam" or "exercise"
+  topic: string;
+  questions: {
+    question_id: number;
+    question_text: string; // Question text with LaTeX
+    choices: string[]; // 4 options (e.g., ["ก. ...", "ข. ..."])
+    correct_answer: string; // e.g., "ก."
+    step_by_step_solution: string[]; // Detailed explanation line-by-line
+    ${isGeometry ? 'graphic_code?: string; // COMPLETE SVG CODE <svg>...</svg>' : ''}
+  }[];
+}
 
-WRITING TONE: ${getWritingToneInstruction()}
-${getContentElementsInstruction()}
-
-Create a comprehensive lecture content with good structure (Headings, bullet points).
-Use LaTeX notation for mathematical formulas (e.g., $x^2$ for inline, $$\\frac{a}{b}$$ for display).
+INSTRUCTIONS:
+- Create exactly ${itemCount} questions.
+- 'step_by_step_solution' must explain the answer in detail, analyzing the problem, replacing values, and summarizing.
+${isGeometry ? getVisualsInstruction() : ''}
 `;
-        } else if (contentType === "lesson") {
+            jsonStructureExample = `{
+  "content_type": "${contentType}",
+  "topic": "${topicText}",
+  "questions": [
+    {
+      "question_id": 1,
+      "question_text": "...",
+      "choices": ["ก. ...", "ข. ...", "ค. ...", "ง. ..."],
+      "correct_answer": "...",
+      "step_by_step_solution": ["Step 1...", "Step 2..."]
+    }
+  ]
+}`;
+
+        } else if (contentType === "lesson" || contentType === "lecture") {
+            // Merging Lesson and Lecture into one 'Lesson' schema as requested
             typeSpecificInstruction = `
-type Section = {
-  type: "lesson";
-  id: string;
+// Schema for Lesson / Documentation
+interface LessonContent {
+  content_type: "lesson";
   title: string;
-  // objectives removed as requested
-  prerequisites: string[]; // What students should know before this lesson
-  content: string; // Detailed markdown content with step-by-step explanations
-  examples: { problem: string; solution: string; }[]; // Worked examples
-  practiceProblems?: { problem: string; hint?: string; solution: string; }[]; // Practice at end with solution
-  keyTakeaways: string[]; // Main points to remember
-};
+  core_concept: string; // Short & Simple explanation
+  analogy: string; // Real-world comparison
+  sections: {
+    sub_heading: string;
+    content: string; // Main explanation (readability focused)
+    formula?: string; // LaTeX formula if related
+    example?: string; // Usage example
+    visual?: string; // SVG code if needed (optional)
+  }[];
+  summary: string; // 3 lines summary
+}
 
-
-
-LESSON DEPTH: ${getLessonDepthInstruction()}
-
-${includeExamples
-                    ? `IMPORTANT: Include exactly ${exampleCount} WORKED EXAMPLES.
-    STYLE: ${getExampleStyleInstruction()}
-    Format: Show the "Problem" followed by a "Solution" with detailed steps.`
-                    : ""}
-${includePractice ? `IMPORTANT: Include exactly ${practiceCount} PRACTICE PROBLEMS at the end.
-CRITICAL: These questions must be derived from COMMON STUDENT MISTAKES (analyze where students fail and turn that into a question).
-CRITICAL: You MUST provide a 'solution' for EVERY SINGLE problem. The solution must be DETAILED, showing the STEP-BY-STEP calculation method, not just the final answer.` : ""}
-
-Structure the lesson as follows:
-1. List any PREREQUISITES students need (Skip formal objectives)
-2. Build the CONTENT gradually from simple to complex
-3. Use plenty of EXAMPLES throughout
-4. End with KEY TAKEAWAYS
-
-IMPORTANT: Start the lecture immediately with the core content. Do not use any "Hook" or "Slogan" options.
-
-
+INSTRUCTIONS:
+- 'core_concept': Explain the essence of the topic simply.
+- 'analogy': Use a clear real-world analogy.
+- 'sections': Break down into readable chunks.
+${includeVisuals ? getVisualsInstruction() : ''}
 `;
+            jsonStructureExample = `{
+  "content_type": "lesson",
+  "title": "${topicText}",
+  "core_concept": "...",
+  "analogy": "...",
+  "sections": [
+    {
+      "sub_heading": "...",
+      "content": "...",
+      "formula": "...",
+      "example": "..."
+    }
+  ],
+  "summary": "..."
+}`;
         } else if (contentType === "video-summary") {
             const transcriptText = inputSource === "transcript" && transcript.trim()
                 ? `\n\nTRANSCRIPT TO SUMMARIZE:\n"""\n${transcript}\n"""`
                 : "";
 
+            const youtubeText = inputSource === "youtube" && youtubeUrl.trim()
+                ? `\n\nSOURCE VIDEO URL: ${youtubeUrl}\n(Note: Please analyze the content from this YouTube video if possible, or use the metadata title/description associated with it.)`
+                : "";
+
             typeSpecificInstruction = `
-You are a Master Teacher's Assistant. Your task is to summarize ${inputSource === "transcript" ? "the provided TRANSCRIPT" : `content about "${topicText}"`} into a structured student-friendly guide.
+You are a Master Teacher's Assistant. Your task is to summarize ${inputSource === "transcript" ? "the provided TRANSCRIPT" : inputSource === "youtube" ? "the video content" : `content about "${topicText}"`} into a structured student-friendly guide.
+// Schema for Summary / Video Transcript
+interface SummaryContent {
+  content_type: "summary";
+  title: string; // Title of the summary or video
+  key_takeaways: string[]; // Important points
+  common_mistakes: string[]; // Points where students often fail
+  timestamps: {
+    time: string; // e.g., "00:00" or empty if generic
+    topic: string;
+  }[];
+}
 
+INSTRUCTIONS:
 ${getSummaryToneInstruction()}
-
-Please follow this EXACT structure in your JSON output:
-
-type Section = {
-  type: "video-summary";
-  id: string;
-  title: string;
-  coreConcept: {
-    title: string;      // e.g., "💡 สรุปมโนทัศน์"
-    content: string;    // Markdown: อธิบายให้ง่ายเหมือนเล่าให้เพื่อนฟัง พร้อม Analogy ที่เห็นภาพชัดเจน
-  };
-  stepByStep: {
-    title: string;      // e.g., "🛣️ วิธีการทำ"
-    steps: string[];    // Array of numbered steps, each step should be clear and actionable
-  };
-  dangerZone: {
-    title: string;      // e.g., "⚠️ จุดอันตรายที่ต้องระวัง"
-    warnings: {
-      mistake: string;   // จุดที่มักผิด / Common Mistake
-      why: string;       // ทำไมถึงผิด / Why it fails
-      prevention: string; // วิธีป้องกัน / How to prevent
-    }[];
-  };
-  keyTakeaways: string[]; // 3-5 bullet points summarizing the most important things to remember
-};
-
-Target Audience: นักเรียนระดับชั้น ${gradeText}
-
-IMPORTANT INSTRUCTIONS:
-1. 💡 สรุปมโนทัศน์ (Core Concept): อธิบายเรื่องนี้ให้ง่ายเหมือนเล่าให้เพื่อนฟัง ใช้การเปรียบเทียบ (Analogy) ที่เห็นภาพชัดเจน
-2. 🛣️ วิธีการทำ (Step-by-Step): สรุปลำดับขั้นตอนการแก้โจทย์หรือวิธีการ เป็นข้อๆ 1, 2, 3... ที่ชัดเจนและปฏิบัติตามได้
-3. ⚠️ จุดอันตรายที่ต้องระวัง (Danger Zone): วิเคราะห์จากเนื้อหาว่าจุดไหนที่นักเรียนมักจะ 'ตกม้าตาย' หรือเข้าใจผิดบ่อยที่สุด พร้อมวิธีป้องกัน (ต้องมีอย่างน้อย 2-3 ข้อ)
-${transcriptText}
+- 'common_mistakes': Identify common misconceptions.
+- 'timestamps': If summarizing a specific known video topic, estimate times or leave generous timestamps.
+${transcriptText}${youtubeText}
 `;
+            jsonStructureExample = `{
+  "content_type": "summary",
+  "title": "${topicText}",
+  "key_takeaways": ["...", "..."],
+  "common_mistakes": ["...", "..."],
+  "timestamps": [
+    { "time": "00:00", "topic": "..." }
+  ]
+}`;
         }
 
+        const prompt = `${baseInstruction}
+${typeSpecificInstruction}
 
-        const visualInstruction = (contentType === 'lesson' && includeVisuals) || (contentType === 'lecture' && contentElements.includes('visuals')) ? getVisualsInstruction() : "";
-
-        const prompt = `${baseInstruction}${typeSpecificInstruction}${visualInstruction}
-Example JSON Structure:
-        {
-            "documentMetadata": {
-                "title": "${topicText}",
-                    "subtitle": "${gradeText}",
-                        "instructor": "AI Teacher",
-                            "date": "2024"
-            },
-            "sections": [
-                {
-                    "type": "${contentType}",
-                    "id": "1",
-                    "title": "${topicText} ${contentType === 'exam' ? 'Test' : contentType === 'exercise' ? 'Exercise' : contentType === 'lesson' ? 'บทเรียน' : contentType === 'video-summary' ? 'สรุป' : 'สรุป'}",
-                    ${contentType === 'exam' ? '"questions": [...]' : contentType === 'exercise' ? '"items": [...]' : contentType === 'lesson' ? '"objectives": [...], "prerequisites": [...], "content": "...", "examples": [...], "keyTakeaways": []' : contentType === 'video-summary' ? '"coreConcept": {...}, "stepByStep": {...}, "dangerZone": {...}, "keyTakeaways": [...]' : '"content": "...", "keyPoints": [...]'}
-    }
-  ]
-} `;
+Example JSON Output:
+${jsonStructureExample}`;
 
         setGeneratedPrompt(prompt);
     };
@@ -955,7 +873,7 @@ Example JSON Structure:
                                 </h3>
 
                                 {/* Tab Selection */}
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-3 gap-3">
                                     <button
                                         onClick={() => setInputSource("topic")}
                                         className={`p-3 rounded-xl border-2 flex items-center gap-2 justify-center transition-all ${inputSource === "topic"
@@ -964,6 +882,15 @@ Example JSON Structure:
                                             }`}
                                     >
                                         ✨ พิมพ์หัวข้อ
+                                    </button>
+                                    <button
+                                        onClick={() => setInputSource("youtube")}
+                                        className={`p-3 rounded-xl border-2 flex items-center gap-2 justify-center transition-all ${inputSource === "youtube"
+                                            ? "bg-red-50 border-red-500 text-red-700 font-bold"
+                                            : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                                            }`}
+                                    >
+                                        🎬 YouTube
                                     </button>
                                     <button
                                         onClick={() => setInputSource("transcript")}
@@ -975,6 +902,28 @@ Example JSON Structure:
                                         📝 วาง Transcript
                                     </button>
                                 </div>
+
+                                {/* YouTube URL Input */}
+                                {inputSource === "youtube" && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                        <label className="block text-sm font-bold text-gray-700">
+                                            ลิงก์ YouTube (URL)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={youtubeUrl}
+                                            onChange={(e) => setYoutubeUrl(e.target.value)}
+                                            placeholder="https://www.youtube.com/watch?v=..."
+                                            className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 font-medium focus:ring-2 focus:ring-red-500 placeholder-gray-400 text-black"
+                                        />
+                                        {/* Validation Warning */}
+                                        {youtubeUrl.trim() === "" && (
+                                            <p className="text-amber-600 text-sm flex items-center gap-1">
+                                                ⚠️ กรุณาวางลิงก์ YouTube
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Transcript Input */}
                                 {inputSource === "transcript" && (

@@ -60,18 +60,31 @@ export default function EditorPage() {
     useEffect(() => {
         setHeaderFooterConfig(loadConfig());
 
-        if (id) {
-            const fetchDoc = async () => {
-                const doc = await getDocumentFromFirestore(id);
+        if (!id) {
+            console.warn("No ID found in params, stopping load.");
+            setIsLoading(false);
+            return;
+        }
+
+        const fetchDoc = async () => {
+            try {
+                // Timeout Promise
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Request timed out")), 5000)
+                );
+
+                console.log("Fetching document with timeout...", id);
+
+                // Race Firestore vs Timeout
+                const doc = await Promise.race([
+                    getDocumentFromFirestore(id),
+                    timeoutPromise
+                ]) as CourseDocument | null;
+
                 if (doc) {
                     setDocumentData(doc);
                 } else {
-                    // Try to load from LocalStorage as fallback during migration? 
-                    // Or just default to new.
-                    // Given the user wants to Fix the issue of missing data, 
-                    // if it's not in Firestore, we should probably check LS one last time or just init new.
-                    // But assume migration is done or we strictly use Firestore now.
-
+                    console.warn("Document not found/timeout, defaulting to new.");
                     setDocumentData({
                         documentMetadata: {
                             id: id,
@@ -85,11 +98,24 @@ export default function EditorPage() {
                         sections: []
                     });
                 }
+            } catch (error) {
+                console.error("Error fetching document:", error);
+                // Fallback to new doc on error (allows working offline/without setup)
+                setDocumentData({
+                    documentMetadata: {
+                        id: id,
+                        title: "เอกสารใหม่ (Offline/Error)",
+                        updatedAt: new Date().toISOString(),
+                    } as any,
+                    sections: []
+                });
+            } finally {
                 setIsLoading(false);
-            };
-            fetchDoc();
-        }
-    }, [id, router]);
+            }
+        };
+
+        fetchDoc();
+    }, [id]);
 
     // Auto-Save Logic (Debounced)
     useEffect(() => {
@@ -146,13 +172,7 @@ export default function EditorPage() {
             )
         };
 
-        // Auto-save happens? The saveDocument isn't called here in original code??
-        // Checking original code: handleSectionUpdate only called setDocumentData. 
-        // handleSave called saveDocument.
-        // Wait, did I miss auto-save?
-        // Original line 79-87 just setDocumentData.
-        // If I want undo to work, fine.
-
+        // Auto-save happens via useEffect
         setDocumentData(updatedDoc);
     };
 
@@ -242,7 +262,17 @@ export default function EditorPage() {
         return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     }
 
-    if (!documentData) return null;
+    if (!documentData) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                <h2 className="text-xl font-bold text-red-500 mb-2">ไม่พบข้อมูลเอกสาร</h2>
+                <p className="text-gray-500 mb-4">ไม่สามารถโหลดข้อมูลได้ หรือ ID เอกสารไม่ถูกต้อง</p>
+                <button onClick={() => router.push('/')} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                    กลับหน้าหลัก
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 print:bg-white text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
@@ -263,8 +293,6 @@ export default function EditorPage() {
 
             {/* Bottom Floating Toolbar */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-auto max-w-4xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-gray-200 dark:border-zinc-800 shadow-2xl rounded-full p-2 flex items-center justify-center gap-4 z-50 print:hidden animate-in slide-in-from-bottom-10 fade-in duration-500">
-
-                {/* Left: Title - REMOVED per user request */}
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-1.5 pr-1">

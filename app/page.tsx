@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database, CloudUpload, RefreshCw } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database, CloudUpload, RefreshCw, X, Trash2 } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
 import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
@@ -45,9 +45,35 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [moveModal, setMoveModal] = useState<{ isOpen: boolean; docId: string | null }>({ isOpen: false, docId: null });
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [migrating, setMigrating] = useState(false);
+
+  // Bulk Selection State
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
+  const selectionMode = selectedDocIds.size > 0;
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedDocIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedDocIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedDocIds(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    // Convert Set to Array and delete concurrently
+    const idsToDelete = Array.from(selectedDocIds);
+    await Promise.all(idsToDelete.map(id => deleteDocumentFromFirestore(id)));
+    clearSelection();
+  };
 
   // --- Handlers using Firestore ---
 
@@ -293,6 +319,9 @@ export default function Dashboard() {
                 onDuplicate={handleDuplicate}
                 onRename={handleRename}
                 onMove={() => handleMoveRequest(doc.id)}
+                selected={selectedDocIds.has(doc.id)}
+                onToggleSelect={toggleSelection}
+                selectionMode={selectionMode}
               />
             ))}
           </div>
@@ -357,6 +386,33 @@ export default function Dashboard() {
         onClose={() => setIsBackupModalOpen(false)}
         onRestoreComplete={() => { }}
       />
+
+      {/* Bulk Action Bar */}
+      {selectionMode && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-2xl rounded-2xl px-6 py-4 flex items-center gap-6 z-50 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-center gap-4 border-r border-gray-200 dark:border-zinc-800 pr-6">
+            <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+              {selectedDocIds.size}
+            </div>
+            <span className="font-medium text-gray-700 dark:text-gray-200">เลือกแล้ว</span>
+          </div>
+
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-2 rounded-xl transition font-medium"
+          >
+            <Trash2 className="w-5 h-5" />
+            <span>ลบที่เลือก</span>
+          </button>
+
+          <button
+            onClick={clearSelection}
+            className="p-2 ml-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

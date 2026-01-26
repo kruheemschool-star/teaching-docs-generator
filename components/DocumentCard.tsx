@@ -14,9 +14,22 @@ interface DocumentCardProps {
     onDuplicate: (id: string) => void;
     onRename: (id: string, currentTitle: string) => void;
     onMove: () => void;
+    // New Props for Bulk Selection
+    selected?: boolean;
+    onToggleSelect?: (id: string) => void;
+    selectionMode?: boolean;
 }
 
-export const DocumentCard = ({ doc, onDelete, onDuplicate, onRename, onMove }: DocumentCardProps) => {
+export const DocumentCard = ({
+    doc,
+    onDelete,
+    onDuplicate,
+    onRename,
+    onMove,
+    selected = false,
+    onToggleSelect,
+    selectionMode = false
+}: DocumentCardProps) => {
     // ... existing ...
 
     // Add logic here
@@ -63,9 +76,7 @@ export const DocumentCard = ({ doc, onDelete, onDuplicate, onRename, onMove }: D
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        if (confirm("คุณแน่ใจหรือไม่ที่จะลบเอกสารนี้?")) {
-            onDelete(doc.id);
-        }
+        onDelete(doc.id);
         setShowMenu(false);
     };
 
@@ -79,8 +90,46 @@ export const DocumentCard = ({ doc, onDelete, onDuplicate, onRename, onMove }: D
             href={`/editor/${doc.id}`}
             draggable
             onDragStart={handleDragStart}
-            className="block group relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-5 transition-all hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 hover:-translate-y-1 duration-200 cursor-grab active:cursor-grabbing"
+            className={`block group relative bg-white dark:bg-zinc-900 border rounded-xl p-5 transition-all hover:shadow-lg hover:-translate-y-1 duration-200 cursor-grab active:cursor-grabbing
+                ${selected
+                    ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/50 dark:bg-blue-900/10'
+                    : 'border-gray-200 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-700'
+                }
+            `}
         >
+            {/* Selection Checkbox Overlay */}
+            {(selectionMode || selected) && onToggleSelect && (
+                <div
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleSelect(doc.id);
+                    }}
+                    className="absolute top-4 right-4 z-30 p-2 cursor-pointer"
+                >
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${selected
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 group-hover:border-blue-400'
+                        }`}>
+                        {selected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                    </div>
+                </div>
+            )}
+
+            {/* Checkbox Hover Trigger (if not in selection mode) */}
+            {!selectionMode && onToggleSelect && (
+                <div
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleSelect(doc.id);
+                    }}
+                    className="absolute top-4 right-12 z-20 w-8 h-8 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+                >
+                    <div className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 ml-auto pointer-events-none" />
+                </div>
+            )}
+
             {/* Icon */}
             <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center">

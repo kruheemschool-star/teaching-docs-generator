@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { CheckCircle2, AlertTriangle, XCircle, Wand2 } from 'lucide-react';
+import { sanitizeJsonString } from '@/lib/smartAdapter';
 
 interface SmartJsonEditorProps {
     value: string;
@@ -15,10 +16,14 @@ export const SmartJsonEditor: React.FC<SmartJsonEditorProps> = ({ value, onChang
 
     // --- SELF-HEALING LOGIC ---
     const smartFixJSON = useCallback((input: string): { fixed: string; wasFixed: boolean; error?: string } => {
-        if (!input.trim()) return { fixed: input, wasFixed: false };
+        // 0. Sanitize LaTeX Escapes first (Critical High Priority)
+        let processedInput = sanitizeJsonString(input);
 
-        let fixed = input;
-        let wasFixed = false;
+        if (!processedInput.trim()) return { fixed: processedInput, wasFixed: false };
+
+        let fixed = processedInput;
+        let wasFixed = input !== processedInput; // If sanitizer changed something, it counts as fixed
+
 
         // 1. Replace Smart Quotes (Common from Notes/Web)
         if (/[\u201C\u201D\u2018\u2019]/.test(fixed)) {
@@ -139,6 +144,7 @@ export const SmartJsonEditor: React.FC<SmartJsonEditorProps> = ({ value, onChang
     return (
         <div className="flex flex-col h-full border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden bg-white dark:bg-zinc-900 shadow-sm transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500/50">
             {/* Toolbar / Status Bar */}
+            {/* Toolbar / Status Bar */}
             <div className={`px-4 py-2 text-xs font-medium flex justify-between items-center border-b border-gray-100 dark:border-zinc-800
                 ${status === 'valid' ? 'bg-green-50 text-green-700' :
                     status === 'fixed' ? 'bg-blue-50 text-blue-700' :
@@ -152,8 +158,27 @@ export const SmartJsonEditor: React.FC<SmartJsonEditorProps> = ({ value, onChang
                     {status === 'empty' && <AlertTriangle className="w-3.5 h-3.5 opacity-50" />}
                     <span>{message || 'รอรับ JSON...'}</span>
                 </div>
-                {/* Manual Format Button (if needed) */}
-                <div className="opacity-50">Smart Editor</div>
+
+                {/* Manual Format Button */}
+                {status === 'invalid' && value.trim().length > 0 && (
+                    <button
+                        onClick={() => {
+                            const { fixed, wasFixed } = smartFixJSON(value);
+                            if (wasFixed) {
+                                handleChange(fixed); // Update content
+                                setStatus('fixed');
+                                setMessage('ซ่อมแซมเรียบร้อย (Manual Fixed) ✨');
+                            } else {
+                                setMessage('ไม่สามารถซ่อมแซมได้ (No fixes found)');
+                            }
+                        }}
+                        className="flex items-center gap-1.5 px-2 py-1 bg-white border border-red-200 text-red-600 rounded-md shadow-sm hover:bg-red-50 hover:border-red-300 transition-all font-bold"
+                    >
+                        <Wand2 className="w-3 h-3" />
+                        Auto Fix
+                    </button>
+                )}
+                {status !== 'invalid' && <div className="opacity-50">Smart Editor</div>}
             </div>
 
             <div className="flex-1 overflow-auto text-sm font-mono custom-scrollbar" onPaste={handlePaste}>

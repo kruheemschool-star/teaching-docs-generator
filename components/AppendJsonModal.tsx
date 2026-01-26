@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, FileJson, Check, PlusCircle, AlertCircle } from 'lucide-react';
 import { Section } from '@/types';
 import { SmartJsonEditor } from './SmartJsonEditor';
+import { smartAdaptJson } from '@/lib/smartAdapter';
 
 interface AppendJsonModalProps {
     isOpen: boolean;
@@ -52,101 +53,20 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
 
                 data = JSON.parse(cleanJson);
             }
-            let sectionsToAppend: Section[] = [];
 
-            // Case 1: Full Document Structure -> Extract sections
-            if (data.documentMetadata && data.sections) {
-                sectionsToAppend = data.sections;
-            }
-            // Case 2: Array of Sections
-            else if (Array.isArray(data)) {
-                sectionsToAppend = data;
-            }
-            // Case 3: Single Section Object
-            else if (data.type && (data.type === 'lecture' || data.type === 'exercise' || data.type === 'exam' || data.type === 'lesson')) {
-                sectionsToAppend = [data];
-            }
-            // Case 4: AI forgot structure, just title and content
-            else if (data.title && data.content) {
+            // --- SMART ADAPTER ---
+            // Use the intelligent adapter to convert ANY input into Section[]
+            let sectionsToAppend: Section[] = smartAdaptJson(data);
+
+            if (sectionsToAppend.length === 0) {
+                // Final fallback for really weird structures not caught by adapter
+                // Treat the whole data as a code block content
                 sectionsToAppend = [{
                     id: crypto.randomUUID(),
                     type: 'lecture',
-                    title: data.title,
-                    content: data.content
+                    title: 'Imported JSON',
+                    content: '```json\n' + JSON.stringify(data, null, 2) + '\n```'
                 }];
-            }
-            // Case 5: Summary Adapter (Video/Lesson Summary)
-            else if (data.content_type === 'summary') {
-                const summaryContent = `
-## Key Takeaways
-${(data.key_takeaways || []).map((k: string) => `- ${k}`).join('\n')}
-
-## Common Mistakes
-${(data.common_mistakes || []).map((m: string) => `- ${m}`).join('\n')}
-
-## Timestamps
-${(data.timestamps || []).map((t: any) => `**${t.time}** - ${t.topic}`).join('\n')}
-                `.trim();
-
-                sectionsToAppend = [{
-                    id: crypto.randomUUID(),
-                    type: 'lecture',
-                    title: `สรุป: ${data.title || 'Video Summary'}`,
-                    content: summaryContent
-                }];
-            }
-            // Case 6: Exam/Exercise Adapter
-            else if (data.content_type === 'exam' || data.content_type === 'exercise') {
-                const isExam = data.content_type === 'exam';
-                // Helper to convert "ก." or "A." to index
-                const getCorrectIndex = (ans: string, choices: string[]) => {
-                    if (!ans) return 0;
-                    // Try direct match first
-                    const idx = choices.findIndex(c => c.startsWith(ans) || c === ans);
-                    if (idx !== -1) return idx;
-
-                    // Fallback: Parsing "ก", "ข", "A", "B", "1", "2"
-                    const cleanAns = ans.replace(/[.()]/g, '').trim().toLowerCase();
-                    const map: Record<string, number> = { 'ก': 0, 'ข': 1, 'ค': 2, 'ง': 3, 'a': 0, 'b': 1, 'c': 2, 'd': 3, '1': 0, '2': 1, '3': 2, '4': 3 };
-                    if (map[cleanAns] !== undefined) return map[cleanAns];
-                    return 0;
-                };
-
-                const questions = (data.questions || []).map((q: any) => ({
-                    id: crypto.randomUUID(),
-                    text: q.question_text || q.question || '',
-                    options: q.choices || q.options || [],
-                    correctOption: getCorrectIndex(q.correct_answer || q.answer, q.choices || q.options || []),
-                    explanation: Array.isArray(q.step_by_step_solution)
-                        ? q.step_by_step_solution.join('\n\n')
-                        : (q.step_by_step_solution || q.detailedSolution || ''),
-                    graphic_code: q.graphic_code
-                }));
-
-                // For Exercise, map to items
-                if (!isExam) {
-                    sectionsToAppend = [{
-                        id: crypto.randomUUID(),
-                        type: 'exercise',
-                        title: data.topic || 'แบบฝึกหัด',
-                        items: questions.map((q: any) => ({
-                            question: q.text,
-                            answer: q.options[q.correctOption] || '', // Use the text of correct option as short answer
-                            detailedSolution: q.explanation,
-                            graphic_code: q.graphic_code
-                        }))
-                    }];
-                } else {
-                    sectionsToAppend = [{
-                        id: crypto.randomUUID(),
-                        type: 'exam',
-                        title: data.topic || 'ข้อสอบ',
-                        questions: questions
-                    }];
-                }
-            }
-            else {
-                throw new Error('ไม่สามารถอ่านรูปแบบข้อมูลได้ (ต้องเป็น Document, Array of Sections, หรือ Section Object)');
             }
 
             // Validate / Fix IDs

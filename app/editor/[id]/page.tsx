@@ -45,6 +45,9 @@ export default function EditorPage() {
     const [showAnswers, setShowAnswers] = useState(true);
     const [isBlockEditing, setIsBlockEditing] = useState(false);
 
+    // Cloud Status State
+    const [cloudStatus, setCloudStatus] = useState<'saved' | 'saving' | 'error' | 'offline'>('saved');
+
     const [headerFooterConfig, setHeaderFooterConfig] = useState<HeaderFooterConfig>(DEFAULT_HEADER_FOOTER_CONFIG);
     const [isLoading, setIsLoading] = useState(true);
     const [showAppendModal, setShowAppendModal] = useState(false);
@@ -57,7 +60,7 @@ export default function EditorPage() {
     // storing future states (for redo)
     const [redoStack, setRedoStack] = useState<CourseDocument[]>([]);
 
-    // Load document - LocalStorage First
+    // Load document - LocalStorage First (Hybrid)
     useEffect(() => {
         setHeaderFooterConfig(loadConfig());
 
@@ -74,6 +77,14 @@ export default function EditorPage() {
             console.log("Found in LocalStorage");
             setDocumentData(localDoc);
             setIsLoading(false);
+
+            // Optional: Check cloud for updates in background
+            // getDocumentFromFirestore(id).then(cloudDoc => {
+            //     if (cloudDoc && new Date(cloudDoc.documentMetadata.updatedAt) > new Date(localDoc.documentMetadata.updatedAt)) {
+            //        // Prompt user to update? For now, let's stick to local master to avoid complexity.
+            //     }
+            // });
+
         } else {
             console.log("Not found locally, initializing new document...");
             setDocumentData({
@@ -92,15 +103,25 @@ export default function EditorPage() {
         }
     }, [id]);
 
-    // Auto-Save Logic (LocalStorage + Background Cloud)
+    // Auto-Save Logic (Hybrid: Local + Cloud)
     useEffect(() => {
         if (!documentData) return;
 
         const timeoutId = setTimeout(() => {
-            // 1. Save Locally (Primary)
+            // 1. Save Locally (Primary & Instant)
             console.log("Auto-saving to LocalStorage...", documentData.documentMetadata.title);
             saveDocument(documentData);
-        }, 1000); // 1 second debounce for local feel
+
+            // 2. Save to Cloud (Background)
+            setCloudStatus('saving');
+            saveDocumentToFirestore(documentData)
+                .then(() => setCloudStatus('saved'))
+                .catch((e) => {
+                    console.warn("Cloud save failed (offline)", e);
+                    setCloudStatus('error');
+                });
+
+        }, 1000); // 1 second debounce
 
         return () => clearTimeout(timeoutId);
     }, [documentData]);
@@ -165,10 +186,21 @@ export default function EditorPage() {
             }
         };
 
-        // Local Save
+        // Local Save (Sync)
         saveDocument(updatedDoc);
-        setDocumentData(updatedDoc); // Update state with new timestamp
-        alert("บันทึกข้อมูลเรียบร้อยแล้ว (Local)");
+        setDocumentData(updatedDoc);
+
+        // Cloud Save (Async)
+        setCloudStatus('saving');
+        saveDocumentToFirestore(updatedDoc)
+            .then(() => {
+                setCloudStatus('saved');
+                alert("บันทึกข้อมูลเรียบร้อยแล้ว (Local + Cloud)");
+            })
+            .catch(() => {
+                setCloudStatus('error');
+                alert("บันทึกข้อมูลลงเครื่องเรียบร้อย (Cloud ไม่สำเร็จ - Offline)");
+            });
     };
 
     const handleSaveMetadata = (newMetadata: DocumentMetadata) => {
@@ -262,6 +294,7 @@ export default function EditorPage() {
             sections: []
         });
         setIsLoading(false);
+        setCloudStatus('offline'); // Set cloud status to offline
     };
 
     if (isLoading) {
@@ -327,6 +360,18 @@ export default function EditorPage() {
 
             {/* Bottom Floating Toolbar */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-auto max-w-4xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-gray-200 dark:border-zinc-800 shadow-2xl rounded-full p-2 flex items-center justify-center gap-4 z-50 print:hidden animate-in slide-in-from-bottom-10 fade-in duration-500">
+
+                {/* Cloud Status Indicator */}
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 text-xs font-medium">
+                    <div className={`w-2 h-2 rounded-full ${cloudStatus === 'saved' ? 'bg-green-500' :
+                            cloudStatus === 'saving' ? 'bg-yellow-500 animate-pulse' :
+                                'bg-red-500'
+                        }`}></div>
+                    <span className="text-gray-500 dark:text-gray-400">
+                        {cloudStatus === 'saved' ? 'Cloud Saved' :
+                            cloudStatus === 'saving' ? 'Syncing...' : 'Offline'}
+                    </span>
+                </div>
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-1.5 pr-1">

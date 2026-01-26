@@ -9,6 +9,7 @@ import { AppendJsonModal } from '@/components/AppendJsonModal';
 import { MetadataModal } from '@/components/MetadataModal';
 import { Save, Download, Printer, FileText, Edit3, Eye, EyeOff, FilePlus, Undo2, Redo2, Eraser, Plus, Minus, Info } from 'lucide-react';
 import { getDocumentFromFirestore, saveDocumentToFirestore } from '@/lib/firestoreUtils';
+import { getDocument, saveDocument } from '@/lib/storage';
 
 const STORAGE_KEY = 'teaching-docs-header-footer-config';
 
@@ -56,7 +57,7 @@ export default function EditorPage() {
     // storing future states (for redo)
     const [redoStack, setRedoStack] = useState<CourseDocument[]>([]);
 
-    // Load document and config
+    // Load document - LocalStorage First
     useEffect(() => {
         setHeaderFooterConfig(loadConfig());
 
@@ -66,65 +67,40 @@ export default function EditorPage() {
             return;
         }
 
-        const fetchDoc = async () => {
-            try {
-                // Timeout Promise
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error("Request timed out")), 5000)
-                );
+        console.log("Loading document from LocalStorage...", id);
+        const localDoc = getDocument(id);
 
-                console.log("Fetching document with timeout...", id);
-
-                // Race Firestore vs Timeout
-                const doc = await Promise.race([
-                    getDocumentFromFirestore(id),
-                    timeoutPromise
-                ]) as CourseDocument | null;
-
-                if (doc) {
-                    setDocumentData(doc);
-                } else {
-                    console.warn("Document not found/timeout, defaulting to new.");
-                    setDocumentData({
-                        documentMetadata: {
-                            id: id,
-                            title: "เอกสารใหม่ (Untitled)",
-                            classLevel: "ม.1",
-                            semester: "semester1",
-                            updatedAt: new Date().toISOString(),
-                            date: new Date().getFullYear().toString(),
-                            instructor: "AI Teacher"
-                        },
-                        sections: []
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching document:", error);
-                // Fallback to new doc on error (allows working offline/without setup)
-                setDocumentData({
-                    documentMetadata: {
-                        id: id,
-                        title: "เอกสารใหม่ (Offline/Error)",
-                        updatedAt: new Date().toISOString(),
-                    } as any,
-                    sections: []
-                });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDoc();
+        if (localDoc) {
+            console.log("Found in LocalStorage");
+            setDocumentData(localDoc);
+            setIsLoading(false);
+        } else {
+            console.log("Not found locally, initializing new document...");
+            setDocumentData({
+                documentMetadata: {
+                    id: id,
+                    title: "เอกสารใหม่",
+                    classLevel: "ม.1",
+                    semester: "เทอม 1",
+                    updatedAt: new Date().toISOString(),
+                    date: new Date().getFullYear().toString(),
+                    instructor: "AI Teacher"
+                },
+                sections: []
+            });
+            setIsLoading(false);
+        }
     }, [id]);
 
-    // Auto-Save Logic (Debounced)
+    // Auto-Save Logic (LocalStorage + Background Cloud)
     useEffect(() => {
         if (!documentData) return;
 
         const timeoutId = setTimeout(() => {
-            console.log("Auto-saving to Firestore...", documentData.documentMetadata.title);
-            saveDocumentToFirestore(documentData);
-        }, 2000); // 2 seconds debounce
+            // 1. Save Locally (Primary)
+            console.log("Auto-saving to LocalStorage...", documentData.documentMetadata.title);
+            saveDocument(documentData);
+        }, 1000); // 1 second debounce for local feel
 
         return () => clearTimeout(timeoutId);
     }, [documentData]);
@@ -145,7 +121,7 @@ export default function EditorPage() {
         setRedoStack(prev => [documentData, ...prev]); // Push current to redo
         setHistory(newHistory);
         setDocumentData(previousState);
-        saveDocumentToFirestore(previousState); // Auto-save on undo? Yes, to persist the revert.
+        saveDocument(previousState); // Auto-save on undo
     };
 
     const handleRedo = () => {
@@ -156,7 +132,7 @@ export default function EditorPage() {
         setHistory(prev => [...prev, documentData]); // Push current to history
         setRedoStack(newRedoStack);
         setDocumentData(nextState);
-        saveDocumentToFirestore(nextState);
+        saveDocument(nextState);
     };
 
     // Handle section updates from Block Editor
@@ -189,12 +165,10 @@ export default function EditorPage() {
             }
         };
 
-        // Async save
-        saveDocumentToFirestore(updatedDoc).then(() => {
-            // Optional: Toast "Saved"
-        });
+        // Local Save
+        saveDocument(updatedDoc);
         setDocumentData(updatedDoc); // Update state with new timestamp
-        alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+        alert("บันทึกข้อมูลเรียบร้อยแล้ว (Local)");
     };
 
     const handleSaveMetadata = (newMetadata: DocumentMetadata) => {
@@ -210,7 +184,7 @@ export default function EditorPage() {
         };
 
         setDocumentData(updatedDoc);
-        saveDocumentToFirestore(updatedDoc);
+        saveDocument(updatedDoc);
     };
 
     // Handle saving config
@@ -235,7 +209,9 @@ export default function EditorPage() {
         };
 
         setDocumentData(updatedDoc);
-        saveDocumentToFirestore(updatedDoc);
+
+        // Save Locally (Primary)
+        saveDocument(updatedDoc);
 
         // Scroll to bottom to show new content
         setTimeout(() => {
@@ -258,8 +234,58 @@ export default function EditorPage() {
         document.body.removeChild(link);
     };
 
+    const [showOfflineOption, setShowOfflineOption] = useState(false);
+
+    // Timeout for showing offline option
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (isLoading) {
+                setShowOfflineOption(true);
+            }
+        }, 3000); // Show option after 3 seconds of loading
+        return () => clearTimeout(timer);
+    }, [isLoading]);
+
+    const handleOfflineMode = () => {
+        console.warn("User chose Offline Mode");
+        // Create a default offline document
+        setDocumentData({
+            documentMetadata: {
+                id: id,
+                title: "เอกสารใหม่ (Offline Version)",
+                classLevel: "ม.1",
+                semester: "เทอม 1",
+                updatedAt: new Date().toISOString(),
+                date: new Date().getFullYear().toString(),
+                instructor: "AI Teacher"
+            },
+            sections: []
+        });
+        setIsLoading(false);
+    };
+
     if (isLoading) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+                <p className="text-gray-500 animate-pulse">กำลังโหลดข้อมูล...</p>
+
+                {showOfflineOption && (
+                    <div className="flex flex-col items-center gap-2 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <p className="text-sm text-red-500 text-center max-w-xs">
+                            การเชื่อมต่อล่าช้ากว่าปกติ (อาจถูกบล็อกโดย Network)
+                        </p>
+                        <button
+                            onClick={handleOfflineMode}
+                            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                            <span>⚡</span>
+                            เข้าใช้งานแบบ Offline (ไม่ต้องรอ)
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
     }
 
     if (!documentData) {
@@ -267,9 +293,17 @@ export default function EditorPage() {
             <div className="min-h-screen flex flex-col items-center justify-center p-4">
                 <h2 className="text-xl font-bold text-red-500 mb-2">ไม่พบข้อมูลเอกสาร</h2>
                 <p className="text-gray-500 mb-4">ไม่สามารถโหลดข้อมูลได้ หรือ ID เอกสารไม่ถูกต้อง</p>
-                <button onClick={() => router.push('/')} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
-                    กลับหน้าหลัก
-                </button>
+                <div className="flex gap-4">
+                    <button onClick={() => router.push('/')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg">
+                        กลับหน้าหลัก
+                    </button>
+                    <button
+                        onClick={handleOfflineMode}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        สร้างใหม่แบบ Offline
+                    </button>
+                </div>
             </div>
         );
     }
@@ -388,7 +422,7 @@ export default function EditorPage() {
                                 });
                                 const newDoc = { ...documentData, sections: cleanedSections };
                                 setDocumentData(newDoc);
-                                saveDocumentToFirestore(newDoc);
+                                saveDocument(newDoc);
                                 alert('ล้างแท็กขยะเรียบร้อยแล้ว!');
                             }}
                             className="p-2.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition hidden sm:inline-flex"

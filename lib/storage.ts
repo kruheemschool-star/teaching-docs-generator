@@ -168,3 +168,30 @@ export const moveDocumentToFolder = (docId: string, folderId: string | null) => 
         saveDocument(doc);
     }
 };
+
+export const updateDocumentTitle = (id: string, newTitle: string) => {
+    const doc = getDocument(id);
+    if (doc) {
+        doc.documentMetadata.title = newTitle;
+        saveDocument(doc);
+    }
+};
+
+export const duplicateDocument = (id: string): CourseDocument | null => {
+    const original = getDocument(id);
+    if (!original) return null;
+
+    const newId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const newDoc: CourseDocument = {
+        ...original,
+        documentMetadata: {
+            ...original.documentMetadata,
+            id: newId,
+            title: `${original.documentMetadata.title} (สำเนา)`,
+            updatedAt: now
+        }
+    };
+    saveDocument(newDoc);
+    return newDoc;
+};

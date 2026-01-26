@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database, CloudUpload, RefreshCw, X, Trash2, Tent } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, RefreshCw, X, Trash2, Tent } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
 import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
@@ -10,21 +10,18 @@ import { MoveDocumentModal } from '@/components/MoveDocumentModal';
 import { ImportJsonModal } from '@/components/ImportJsonModal';
 import { BackupModal } from '@/components/BackupModal';
 
-// New Firestore Hooks & Utils
-import { useDocuments, useFolders } from '@/hooks/useFirestore';
+// Local Storage Utils
 import {
-  createDocumentInFirestore,
-  saveDocumentToFirestore,
-  deleteDocumentFromFirestore,
-  createFolderInFirestore,
-  deleteFolderFromFirestore,
-  moveDocumentInFirestore,
-  migrateToFirestore,
-  updateDocumentTitleInFirestore, // New
-  duplicateDocumentInFirestore    // New
-} from '@/lib/firestoreUtils';
-
-// ... imports
+  getAllDocuments,
+  getAllFolders,
+  createDocument,
+  createFolder,
+  deleteDocument,
+  deleteFolder,
+  moveDocumentToFolder,
+  updateDocumentTitle,
+  duplicateDocument
+} from '@/lib/storage';
 
 const CLASS_LEVELS = ["ประถมศึกษา", "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"];
 const SEMESTERS = [
@@ -45,27 +42,40 @@ const TOPICS = [
 export default function Dashboard() {
   const router = useRouter();
 
-  // Real-time Data from Firestore
-  const { documents, loading: docsLoading } = useDocuments();
-  const { folders, loading: foldersLoading } = useFolders();
+  // Local State
+  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // UI State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [filterClass, setFilterClass] = useState<string>("all");
   const [filterTerm, setFilterTerm] = useState<string>("all");
-  const [filterTopic, setFilterTopic] = useState<string>("all"); // New Topic Filter
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [filterTopic, setFilterTopic] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const [moveModal, setMoveModal] = useState<{ isOpen: boolean; docId: string | null }>({ isOpen: false, docId: null });
-
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
-  const [migrating, setMigrating] = useState(false);
 
   // Bulk Selection State
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
   const selectionMode = selectedDocIds.size > 0;
+
+  // Initial Load & Refresh Logic
+  const refreshData = () => {
+    setIsLoading(true);
+    // Add small delay to prevent flicker if operations are instant
+    setTimeout(() => {
+      setDocuments(getAllDocuments());
+      setFolders(getAllFolders());
+      setIsLoading(false);
+    }, 100);
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, []);
 
   const toggleSelection = (id: string) => {
     const newSelected = new Set(selectedDocIds);
@@ -82,62 +92,50 @@ export default function Dashboard() {
   };
 
   const handleBulkDelete = async () => {
-    // Convert Set to Array and delete concurrently
     const idsToDelete = Array.from(selectedDocIds);
-    await Promise.all(idsToDelete.map(id => deleteDocumentFromFirestore(id)));
+    if (!confirm(`ต้องการลบเอกสาร ${idsToDelete.length} รายการใช่หรือไม่?`)) return;
+
+    idsToDelete.forEach(id => deleteDocument(id));
     clearSelection();
+    refreshData();
   };
 
-  // --- Handlers using Firestore ---
-
-  const handleMigration = async () => {
-    if (!confirm("ยืนยันที่จะอัพโหลดข้อมูลทั้งหมดในเครื่องขึ้นสู่ Cloud?\n(ควรทำเพียงครั้งเดียวเพื่อย้ายข้อมูล)")) return;
-
-    setMigrating(true);
-    const result = await migrateToFirestore();
-    setMigrating(false);
-
-    if (result.success) {
-      alert(`สำเร็จ! ย้ายข้อมูล ${result.count} รายการขึ้น Cloud เรียบร้อยแล้ว`);
-    } else {
-      alert("เกิดข้อผิดพลาดในการย้ายข้อมูล กรุณาลองใหม่อีกครั้ง");
-    }
-  };
+  // --- Handlers using LocalStorage ---
 
   const handleDelete = async (id: string) => {
     if (confirm("ต้องการลบเอกสารนี้ใช่หรือไม่?")) {
-      await deleteDocumentFromFirestore(id);
+      deleteDocument(id);
+      refreshData();
     }
   };
 
   const handleRename = async (id: string, currentTitle: string) => {
     const newTitle = prompt("กรุณาระบุชื่อเอกสารใหม่:", currentTitle);
     if (newTitle && newTitle.trim() !== "") {
-      await updateDocumentTitleInFirestore(id, newTitle.trim());
+      updateDocumentTitle(id, newTitle.trim());
+      refreshData();
     }
   };
 
   const handleDuplicate = async (id: string) => {
-    const result = await duplicateDocumentInFirestore(id);
-    if (!result) {
+    const result = duplicateDocument(id);
+    if (result) {
+      refreshData();
+    } else {
       alert("เกิดข้อผิดพลาดในการทำสำเนา");
     }
   };
 
   const handleCreateNew = async () => {
-    // 1. Create directly in Firestore
-    const newDoc = await createDocumentInFirestore("เอกสารใหม่ (Untitled)", "ม.1", "เทอม 1");
+    const newDoc = createDocument("เอกสารใหม่", "ม.1", "เทอม 1");
 
     if (newDoc) {
       if (currentFolderId) {
-        // Move to folder immediately if needed, or update the obj before create?
-        // Ideally createDocumentInFirestore should accept folderId.
-        // But for now, let's just move it.
-        await moveDocumentInFirestore(newDoc.documentMetadata.id, currentFolderId);
+        moveDocumentToFolder(newDoc.documentMetadata.id, currentFolderId);
       }
       router.push(`/editor/${newDoc.documentMetadata.id}`);
     } else {
-      alert("สร้างเอกสารล้มเหลว กรุณาตรวจสอบการเชื่อมต่อ");
+      alert("สร้างเอกสารล้มเหลว");
     }
   };
 
@@ -146,13 +144,15 @@ export default function Dashboard() {
   const handleCreateFolder = async () => {
     const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่:");
     if (name && name.trim()) {
-      await createFolderInFirestore(name.trim());
+      createFolder(name.trim());
+      refreshData();
     }
   };
 
   const handleDeleteFolder = async (id: string) => {
     if (confirm("ต้องการลบโฟลเดอร์นี้และเนื้อหาภายในใช่หรือไม่?")) {
-      await deleteFolderFromFirestore(id);
+      deleteFolder(id);
+      refreshData();
     }
   };
 
@@ -166,13 +166,15 @@ export default function Dashboard() {
 
   const handleMoveConfirm = async (targetFolderId: string | null) => {
     if (moveModal.docId) {
-      await moveDocumentInFirestore(moveModal.docId, targetFolderId);
+      moveDocumentToFolder(moveModal.docId, targetFolderId);
+      refreshData();
       setMoveModal({ isOpen: false, docId: null });
     }
   };
 
   const handleFileDrop = async (docId: string, targetFolderId: string) => {
-    await moveDocumentInFirestore(docId, targetFolderId);
+    moveDocumentToFolder(docId, targetFolderId);
+    refreshData();
   };
 
   // Filter Logic
@@ -186,14 +188,12 @@ export default function Dashboard() {
     const matchesClass = filterClass === "all" || doc.classLevel === filterClass;
     const matchesTerm = filterTerm === "all" || doc.semester === filterTerm;
     const matchesTopic = filterTopic === "all" || (doc.topic === filterTopic);
-    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (doc.title || "").toLowerCase().includes(searchQuery.toLowerCase());
 
     return inCurrentFolder && matchesClass && matchesTerm && matchesTopic && matchesSearch;
-  }); // Already sorted by hook
+  });
 
   const getCurrentFolder = () => folders.find(f => f.id === currentFolderId);
-
-  const isLoading = docsLoading || foldersLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
@@ -227,21 +227,9 @@ export default function Dashboard() {
               {isLoading && <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />}
             </h2>
 
-            {/* Show toolbar only if we have documents OR if we are filtering (so user can reset) OR if loading 
-                Actually, simpler: Hide ONLY if documents.length === 0 && !isLoading (True Empty State) 
-            */}
+            {/* Show toolbar only if we have documents OR if we are filtering OR if loading */}
             {(documents.length > 0 || isLoading) && (
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={handleMigration}
-                  disabled={migrating}
-                  className="px-4 py-2.5 bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-medium transition flex items-center gap-2 text-sm"
-                  title="อัพโหลดข้อมูลในเครื่องขึ้น Cloud"
-                >
-                  {migrating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
-                  <span className="hidden sm:inline">Sync to Cloud</span>
-                </button>
-
                 <button
                   onClick={handleCreateFolder}
                   className="px-4 py-2.5 bg-transparent border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition flex items-center gap-2 text-sm"
@@ -413,18 +401,14 @@ export default function Dashboard() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onImport={() => {
-          // Refresh not needed with real-time listeners? 
-          // If importing manually, we might need a way to push to firestore. 
-          // The existing import probably saves to localStorage.
-          // We should warn user.
-          alert("ระบบ Import นี้ยังบันทึกรูปลงเครื่องอยู่ โปรดกด 'Sync to Cloud' หลังจาก Import เสร็จสิ้น");
+          refreshData(); // Just refresh local data
         }}
         currentFolderId={currentFolderId}
       />
       <BackupModal
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
-        onRestoreComplete={() => { }}
+        onRestoreComplete={refreshData}
       />
 
       {/* Bulk Action Bar */}

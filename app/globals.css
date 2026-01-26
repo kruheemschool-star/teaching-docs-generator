@@ -3,51 +3,75 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #09090b;
+  --foreground: #333333;
+  /* Minimalist Dark Gray, not Black */
   --paper: #ffffff;
-  --font-family-base: var(--font-sarabun);
-  --border-subtle: #e4e4e7;
-  --bg-subtle: #f4f4f5;
+  --font-family-base: var(--font-ibm-plex-thai);
+  /* Switched default font */
+
+  --border-subtle: #e5e5e5;
+  --bg-subtle: #fafafa;
+  /* Lighter subtle background */
+
   --card: #ffffff;
-  --card-foreground: #09090b;
+  --card-foreground: #333333;
   --popover: #ffffff;
-  --popover-foreground: #09090b;
+  --popover-foreground: #333333;
+
   --primary: #18181b;
   --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
+
+  --secondary: #fafafa;
   --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
+
+  --muted: #fafafa;
+  --muted-foreground: #666666;
+  /* Medium Gray for body text */
+
+  --accent: #fafafa;
   --accent-foreground: #18181b;
+
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #18181b;
+
+  --border: #e5e5e5;
+  /* Subtle border 1px */
+  --input: #e5e5e5;
+  --ring: #e5e5e5;
+  /* Subtle ring */
+
+  --radius: 0.5rem;
 }
 
 .dark {
   --background: #09090b;
   --foreground: #fafafa;
   --paper: #ffffff;
-  /* Paper always white */
+  /* Paper remains white in "document view" usually, but can adapt */
+
   --border-subtle: #27272a;
   --bg-subtle: #18181b;
+
   --card: #09090b;
   --card-foreground: #fafafa;
   --popover: #09090b;
   --popover-foreground: #fafafa;
+
   --primary: #fafafa;
   --primary-foreground: #18181b;
+
   --secondary: #27272a;
   --secondary-foreground: #fafafa;
+
   --muted: #27272a;
   --muted-foreground: #a1a1aa;
+
   --accent: #27272a;
   --accent-foreground: #fafafa;
+
   --destructive: #7f1d1d;
   --destructive-foreground: #fafafa;
+
   --border: #27272a;
   --input: #27272a;
   --ring: #d4d4d8;
@@ -57,7 +81,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-paper: var(--paper);
-  --font-sans: var(--font-sarabun);
+  --font-sans: var(--font-ibm-plex-thai);
   --font-mono: var(--font-geist-mono);
 }
 

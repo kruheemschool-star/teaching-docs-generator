@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { X, FileJson, Check, AlertCircle } from 'lucide-react';
 import { CourseDocument } from '@/types';
-import { saveDocument } from '@/lib/storage';
+import { saveDocumentToFirestore } from '@/lib/firestoreUtils';
 import { smartAdaptJson } from '@/lib/smartAdapter';
 
 interface ImportJsonModalProps {
@@ -91,7 +91,8 @@ export const ImportJsonModal = ({ isOpen, onClose, onImport, currentFolderId }: 
             };
 
             // Save
-            saveDocument(newDoc);
+            // Save
+            saveDocumentToFirestore(newDoc);
 
             // Cleanup
             setJsonContent('');

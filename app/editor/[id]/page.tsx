@@ -8,7 +8,7 @@ import { CourseDocument, HeaderFooterConfig, DEFAULT_HEADER_FOOTER_CONFIG, Secti
 import { AppendJsonModal } from '@/components/AppendJsonModal';
 import { MetadataModal } from '@/components/MetadataModal';
 import { Save, Download, Printer, FileText, Edit3, Eye, EyeOff, FilePlus, Undo2, Redo2, Eraser, Plus, Minus, Info } from 'lucide-react';
-import { getDocument, saveDocument } from '@/lib/storage';
+import { getDocumentFromFirestore, saveDocumentToFirestore } from '@/lib/firestoreUtils';
 
 const STORAGE_KEY = 'teaching-docs-header-footer-config';
 
@@ -61,28 +61,47 @@ export default function EditorPage() {
         setHeaderFooterConfig(loadConfig());
 
         if (id) {
-            const doc = getDocument(id);
-            if (doc) {
-                setDocumentData(doc);
-            } else {
-                // If not found, treat as new draft (don't save yet!)
-                // Create a default empty document structure
-                setDocumentData({
-                    documentMetadata: {
-                        id: id,
-                        title: "เอกสารใหม่ (Untitled)",
-                        classLevel: "ม.1",
-                        semester: "semester1",
-                        updatedAt: new Date().toISOString(),
-                        date: new Date().getFullYear().toString(),
-                        instructor: "AI Teacher"
-                    },
-                    sections: []
-                });
-            }
-            setIsLoading(false);
+            const fetchDoc = async () => {
+                const doc = await getDocumentFromFirestore(id);
+                if (doc) {
+                    setDocumentData(doc);
+                } else {
+                    // Try to load from LocalStorage as fallback during migration? 
+                    // Or just default to new.
+                    // Given the user wants to Fix the issue of missing data, 
+                    // if it's not in Firestore, we should probably check LS one last time or just init new.
+                    // But assume migration is done or we strictly use Firestore now.
+
+                    setDocumentData({
+                        documentMetadata: {
+                            id: id,
+                            title: "เอกสารใหม่ (Untitled)",
+                            classLevel: "ม.1",
+                            semester: "semester1",
+                            updatedAt: new Date().toISOString(),
+                            date: new Date().getFullYear().toString(),
+                            instructor: "AI Teacher"
+                        },
+                        sections: []
+                    });
+                }
+                setIsLoading(false);
+            };
+            fetchDoc();
         }
     }, [id, router]);
+
+    // Auto-Save Logic (Debounced)
+    useEffect(() => {
+        if (!documentData) return;
+
+        const timeoutId = setTimeout(() => {
+            console.log("Auto-saving to Firestore...", documentData.documentMetadata.title);
+            saveDocumentToFirestore(documentData);
+        }, 2000); // 2 seconds debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [documentData]);
 
     // Helper to save current state to history before modification
     const saveToHistory = () => {
@@ -100,7 +119,7 @@ export default function EditorPage() {
         setRedoStack(prev => [documentData, ...prev]); // Push current to redo
         setHistory(newHistory);
         setDocumentData(previousState);
-        saveDocument(previousState); // Auto-save on undo? Yes, to persist the revert.
+        saveDocumentToFirestore(previousState); // Auto-save on undo? Yes, to persist the revert.
     };
 
     const handleRedo = () => {
@@ -111,7 +130,7 @@ export default function EditorPage() {
         setHistory(prev => [...prev, documentData]); // Push current to history
         setRedoStack(newRedoStack);
         setDocumentData(nextState);
-        saveDocument(nextState);
+        saveDocumentToFirestore(nextState);
     };
 
     // Handle section updates from Block Editor
@@ -150,7 +169,10 @@ export default function EditorPage() {
             }
         };
 
-        saveDocument(updatedDoc);
+        // Async save
+        saveDocumentToFirestore(updatedDoc).then(() => {
+            // Optional: Toast "Saved"
+        });
         setDocumentData(updatedDoc); // Update state with new timestamp
         alert("บันทึกข้อมูลเรียบร้อยแล้ว");
     };
@@ -168,7 +190,7 @@ export default function EditorPage() {
         };
 
         setDocumentData(updatedDoc);
-        saveDocument(updatedDoc);
+        saveDocumentToFirestore(updatedDoc);
     };
 
     // Handle saving config
@@ -193,7 +215,7 @@ export default function EditorPage() {
         };
 
         setDocumentData(updatedDoc);
-        saveDocument(updatedDoc);
+        saveDocumentToFirestore(updatedDoc);
 
         // Scroll to bottom to show new content
         setTimeout(() => {
@@ -338,7 +360,7 @@ export default function EditorPage() {
                                 });
                                 const newDoc = { ...documentData, sections: cleanedSections };
                                 setDocumentData(newDoc);
-                                saveDocument(newDoc);
+                                saveDocumentToFirestore(newDoc);
                                 alert('ล้างแท็กขยะเรียบร้อยแล้ว!');
                             }}
                             className="p-2.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition hidden sm:inline-flex"

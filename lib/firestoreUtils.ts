@@ -52,6 +52,22 @@ export const migrateToFirestore = async () => {
     }
 };
 
+export const getDocumentFromFirestore = async (id: string): Promise<CourseDocument | null> => {
+    try {
+        const docRef = doc(db, COLLECTION_DOCS, id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return docSnap.data() as CourseDocument;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching document:", error);
+        return null;
+    }
+};
+
 // --- CRUD Operations ---
 
 export const createDocumentInFirestore = async (

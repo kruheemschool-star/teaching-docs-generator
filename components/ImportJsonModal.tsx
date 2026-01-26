@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { X, FileJson, Check, AlertCircle } from 'lucide-react';
 import { CourseDocument } from '@/types';
 import { saveDocument } from '@/lib/storage';
+import { smartAdaptJson } from '@/lib/smartAdapter';
 
 interface ImportJsonModalProps {
     isOpen: boolean;
@@ -53,49 +54,40 @@ export const ImportJsonModal = ({ isOpen, onClose, onImport, currentFolderId }: 
 
             let data = JSON.parse(cleanJson);
 
-            // --- Smart Normalization for AI Output ---
-            // AI sometimes generates flat objects like { "title": "...", "sections": [...] }
-            if (!data.documentMetadata && data.title) {
-                console.log("Normalizing flat JSON structure...");
-                data = {
-                    documentMetadata: {
-                        id: crypto.randomUUID(),
-                        title: data.title,
-                        subtitle: data.subtitle || '',
-                        classLevel: data.classLevel || '',
-                        semester: data.semester || '',
-                        updatedAt: new Date().toISOString()
-                    },
-                    sections: data.sections || []
-                };
+            let sections: CourseDocument['sections'] = [];
+            let metadata = null;
+            let title = "Imported Document";
+
+            if (data.documentMetadata) {
+                // Full export case
+                metadata = data.documentMetadata;
+                sections = data.sections || [];
+                title = metadata.title;
+            } else {
+                // Fragment or AI output case
+                title = data.topic || data.title || "เอกสารใหม่";
+
+                // Use Smart Adapter to convert raw data to sections
+                sections = smartAdaptJson(data);
             }
 
-            // Case: Array of sections/blocks
-            if (Array.isArray(data)) {
-                data = {
-                    documentMetadata: {
-                        id: crypto.randomUUID(),
-                        title: "Imported Document (จาก Array)",
-                        updatedAt: new Date().toISOString()
-                    },
-                    sections: data
-                };
-            }
-
-            // Basic Validation
-            if (!data.documentMetadata || !data.sections) {
-                throw new Error('โครงสร้าง JSON ไม่ครบถ้วน (ต้องมี documentMetadata หรือ title และ sections)');
+            if (!sections || sections.length === 0) {
+                throw new Error('ไม่พบเนื้อหา (Sections) หรือรูปแบบ JSON ไม่ถูกต้อง');
             }
 
             // Prepare for import
             const newDoc: CourseDocument = {
-                ...data,
                 documentMetadata: {
-                    ...data.documentMetadata,
-                    id: crypto.randomUUID(), // Always generate new ID
+                    ...(metadata || {}),
+                    id: crypto.randomUUID(),
+                    title: metadata?.title || title,
+                    subtitle: metadata?.subtitle || '',
+                    classLevel: metadata?.classLevel || '',
+                    semester: metadata?.semester || '',
                     updatedAt: new Date().toISOString(),
-                    folderId: currentFolderId || null // Assign to current folder
-                }
+                    folderId: currentFolderId || null
+                },
+                sections: sections
             };
 
             // Save

@@ -18,6 +18,7 @@ export interface DocumentMetadata {
     date?: string;
     updatedAt: string; // ISO timestamp for sorting
     headerImage?: string; // Optional URL for a logo/header
+    topic?: string; // e.g., "พีชคณิต", "เรขาคณิต"
 }
 
 export interface BaseSection {

@@ -108,8 +108,8 @@ export const DocumentCard = ({
                     className="absolute top-4 right-4 z-30 p-2 cursor-pointer"
                 >
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${selected
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 group-hover:border-blue-400'
+                        ? 'bg-blue-600 border-blue-600 text-white'
+                        : 'bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 group-hover:border-blue-400'
                         }`}>
                         {selected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                     </div>
@@ -193,13 +193,27 @@ export const DocumentCard = ({
 
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
+                {/* Topic Tag */}
+                {doc.topic && doc.topic !== "อื่นๆ" && (
+                    <span className={`px-2 py-0.5 text-xs rounded-md font-medium border ${doc.topic === 'พีชคณิต' ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' :
+                            doc.topic === 'เรขาคณิต' ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' :
+                                doc.topic === 'สถิติและประมวลผลข้อมูล' ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800' :
+                                    doc.topic === 'แคลคูลัส' ? 'bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800' :
+                                        doc.topic === 'จำนวนและตัวเลข' ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800' :
+                                            doc.topic === 'การวัด' ? 'bg-teal-50 text-teal-600 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800' :
+                                                'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+                        }`}>
+                        {doc.topic}
+                    </span>
+                )}
+
                 {doc.classLevel && (
-                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-xs rounded-md font-medium">
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-xs rounded-md font-medium border border-transparent">
                         {doc.classLevel}
                     </span>
                 )}
                 {doc.semester && (
-                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-xs rounded-md font-medium">
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400 text-xs rounded-md font-medium border border-transparent">
                         {doc.semester === "semester1" ? "เทอม 1" : doc.semester === "semester2" ? "เทอม 2" : "เทอม 1"}
                     </span>
                 )}

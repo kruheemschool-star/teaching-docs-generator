@@ -57,7 +57,8 @@ export const migrateToFirestore = async () => {
 export const createDocumentInFirestore = async (
     title: string,
     classLevel: string = "ม.1",
-    semester: string = "เทอม 1"
+    semester: string = "เทอม 1",
+    topic: string = "อื่นๆ" // Default topic
 ): Promise<CourseDocument | null> => {
     try {
         const id = crypto.randomUUID();
@@ -71,7 +72,8 @@ export const createDocumentInFirestore = async (
                 semester,
                 updatedAt: now,
                 date: new Date().getFullYear().toString(),
-                instructor: "AI Teacher"
+                instructor: "AI Teacher",
+                topic: topic
             },
             sections: []
         };

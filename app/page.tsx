@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database, CloudUpload, RefreshCw, X, Trash2 } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, FileJson, Database, CloudUpload, RefreshCw, X, Trash2, Tent } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
 import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
@@ -24,10 +24,22 @@ import {
   duplicateDocumentInFirestore    // New
 } from '@/lib/firestoreUtils';
 
+// ... imports
+
 const CLASS_LEVELS = ["ประถมศึกษา", "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"];
 const SEMESTERS = [
   { value: "semester1", label: "เทอม 1" },
   { value: "semester2", label: "เทอม 2" }
+];
+
+const TOPICS = [
+  'พีชคณิต',
+  'เรขาคณิต',
+  'สถิติและประมวลผลข้อมูล',
+  'จำนวนและตัวเลข',
+  'การวัด',
+  'แคลคูลัส',
+  'อื่นๆ'
 ];
 
 export default function Dashboard() {
@@ -35,12 +47,13 @@ export default function Dashboard() {
 
   // Real-time Data from Firestore
   const { documents, loading: docsLoading } = useDocuments();
-  const { folders, loading: foldersLoading } = useFolders(); // You need to implement useFolders hook in @/hooks/useFirestore.ts if you haven't! I see I added it.
+  const { folders, loading: foldersLoading } = useFolders();
 
   // UI State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [filterClass, setFilterClass] = useState<string>("all");
   const [filterTerm, setFilterTerm] = useState<string>("all");
+  const [filterTopic, setFilterTopic] = useState<string>("all"); // New Topic Filter
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -172,9 +185,10 @@ export default function Dashboard() {
     // 2. Search/Global Filters
     const matchesClass = filterClass === "all" || doc.classLevel === filterClass;
     const matchesTerm = filterTerm === "all" || doc.semester === filterTerm;
+    const matchesTopic = filterTopic === "all" || (doc.topic === filterTopic);
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return inCurrentFolder && matchesClass && matchesTerm && matchesSearch;
+    return inCurrentFolder && matchesClass && matchesTerm && matchesTopic && matchesSearch;
   }); // Already sorted by hook
 
   const getCurrentFolder = () => folders.find(f => f.id === currentFolderId);
@@ -207,78 +221,91 @@ export default function Dashboard() {
           </div>
 
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 flex items-center gap-2">
-              Dashboard
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 flex items-center gap-3">
+              <Tent className="w-8 h-8 text-orange-500" />
+              Base Camp
               {isLoading && <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />}
             </h2>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleMigration}
-                disabled={migrating}
-                className="px-4 py-3 bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl font-medium transition flex items-center gap-2"
-                title="อัพโหลดข้อมูลในเครื่องขึ้น Cloud"
-              >
-                {migrating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CloudUpload className="w-5 h-5" />}
-                <span className="hidden sm:inline">Sync to Cloud</span>
-              </button>
-              {/*               
-              <button
-                onClick={() => setIsBackupModalOpen(true)}
-                className="p-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 rounded-xl transition shadow-sm"
-                title="จัดการข้อมูล (Backup & Restore)"
-              >
-                <Database className="w-5 h-5" />
-              </button> 
-*/}
-              <button
-                onClick={handleCreateFolder}
-                className="px-4 py-3 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-xl font-medium transition flex items-center gap-2"
-              >
-                <FolderPlus className="w-5 h-5" />
-                <span className="hidden sm:inline">สร้างโฟลเดอร์</span>
-              </button>
-              <button
-                onClick={handleCreateNew} // Updated to creating new doc
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition shadow-lg shadow-blue-500/30 flex items-center gap-2 transform hover:scale-105 active:scale-95"
-              >
-                <FolderPlus className="w-6 h-6" />
-                <span>สร้างเอกสารใหม่</span>
-              </button>
+
+            {/* Show toolbar only if we have documents OR if we are filtering (so user can reset) OR if loading 
+                Actually, simpler: Hide ONLY if documents.length === 0 && !isLoading (True Empty State) 
+            */}
+            {(documents.length > 0 || isLoading) && (
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleMigration}
+                  disabled={migrating}
+                  className="px-4 py-2.5 bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-medium transition flex items-center gap-2 text-sm"
+                  title="อัพโหลดข้อมูลในเครื่องขึ้น Cloud"
+                >
+                  {migrating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
+                  <span className="hidden sm:inline">Sync to Cloud</span>
+                </button>
+
+                <button
+                  onClick={handleCreateFolder}
+                  className="px-4 py-2.5 bg-transparent border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition flex items-center gap-2 text-sm"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  <span className="hidden sm:inline">สร้างโฟลเดอร์</span>
+                </button>
+
+                <button
+                  onClick={handleCreateNew}
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-sm shadow-blue-500/30 flex items-center gap-2 text-sm"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  <span>สร้างเอกสาร</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Filters - Hide on True Empty State */}
+        {documents.length > 0 && (
+          <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white/80 dark:bg-zinc-900/80 p-2 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm sticky top-[70px] z-10 backdrop-blur-md transition-colors duration-200">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="ค้นหาชื่อเอกสาร..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
+              />
             </div>
+
+            <select
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+              className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm text-gray-900 dark:text-gray-100"
+            >
+              <option value="all" className="bg-white dark:bg-zinc-900">ทุกระดับชั้น</option>
+              {CLASS_LEVELS.map(l => <option key={l} value={l} className="bg-white dark:bg-zinc-900">{l}</option>)}
+            </select>
+
+            <select
+              value={filterTerm}
+              onChange={(e) => setFilterTerm(e.target.value)}
+              className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm text-gray-900 dark:text-gray-100"
+            >
+              <option value="all" className="bg-white dark:bg-zinc-900">ทุกเทอม</option>
+              {SEMESTERS.map(s => <option key={s.value} value={s.value} className="bg-white dark:bg-zinc-900">{s.label}</option>)}
+            </select>
+
+            <select
+              value={filterTopic}
+              onChange={(e) => setFilterTopic(e.target.value)}
+              className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm text-gray-900 dark:text-gray-100"
+            >
+              <option value="all" className="bg-white dark:bg-zinc-900">ทุกหมวดหมู่</option>
+              {TOPICS.map(t => (
+                <option key={t} value={t} className="bg-white dark:bg-zinc-900">{t}</option>
+              ))}
+            </select>
           </div>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white/80 dark:bg-zinc-900/80 p-2 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm sticky top-[70px] z-10 backdrop-blur-md transition-colors duration-200">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="ค้นหาชื่อเอกสาร..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400"
-            />
-          </div>
-
-          <select
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-            className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm text-gray-900 dark:text-gray-100"
-          >
-            <option value="all" className="bg-white dark:bg-zinc-900">ทุกระดับชั้น</option>
-            {CLASS_LEVELS.map(l => <option key={l} value={l} className="bg-white dark:bg-zinc-900">{l}</option>)}
-          </select>
-
-          <select
-            value={filterTerm}
-            onChange={(e) => setFilterTerm(e.target.value)}
-            className="px-4 py-2 bg-transparent border border-gray-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer text-sm text-gray-900 dark:text-gray-100"
-          >
-            <option value="all" className="bg-white dark:bg-zinc-900">ทุกเทอม</option>
-            {SEMESTERS.map(s => <option key={s.value} value={s.value} className="bg-white dark:bg-zinc-900">{s.label}</option>)}
-          </select>
-        </div>
+        )}
 
         {/* --- Folders Section (Only at Root) --- */}
         {!currentFolderId && folders.length > 0 && !searchQuery && (
@@ -332,28 +359,41 @@ export default function Dashboard() {
                 <RefreshCw className="w-10 h-10 animate-spin text-blue-500" />
               </div>
             ) : (
-              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-10 max-w-lg w-full border border-gray-100 dark:border-zinc-800 shadow-xl shadow-gray-200/50 dark:shadow-none">
-                <div className="w-24 h-24 bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-slow">
-                  <span className="text-4xl">✨</span>
+              <div className="flex flex-col items-center max-w-md mx-auto">
+                {/* Minimalist Line Art Illustration */}
+                <div className="mb-8 opacity-90">
+                  <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="stroke-blue-200 dark:stroke-indigo-900/50">
+                    <path d="M40 60C40 54.4772 44.4772 50 50 50H150C155.523 50 160 54.4772 160 60V160C160 165.523 155.523 170 150 170H50C44.4772 170 40 165.523 40 160V60Z" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M70 50V170" strokeWidth="2" strokeDasharray="4 4" />
+                    <path d="M40 90H160" strokeWidth="2" strokeOpacity="0.5" />
+                    <path d="M40 110H160" strokeWidth="2" strokeOpacity="0.5" />
+                    <path d="M40 130H160" strokeWidth="2" strokeOpacity="0.5" />
+
+                    {/* Pencil/Ruler Element */}
+                    <path d="M80 80L120 120" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M120 80L80 120" strokeWidth="2" strokeLinecap="round" />
+                    <circle cx="100" cy="100" r="10" strokeWidth="2" />
+
+                    {/* Decorative Geometric Elements */}
+                    <path d="M160 30L170 40L160 50" strokeWidth="2" strokeLinecap="round" className="stroke-indigo-300 dark:stroke-indigo-700" />
+                    <circle cx="30" cy="160" r="5" strokeWidth="2" className="stroke-blue-300 dark:stroke-blue-700" />
+                  </svg>
                 </div>
 
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-                  ยังไม่มีเอกสารที่นี่
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  ยังไม่มีวิชาโปรดของคุณที่นี่
                 </h3>
 
-                <p className="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed">
-                  เริ่มต้นสร้างสื่อการสอนชิ้นแรกของคุณได้ง่ายๆ<br />
-                  ด้วยพลัง AI หรือเขียนเองตามใจชอบ
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
+                  เริ่มสร้างเอกสารแรกเพื่อเปลี่ยนโจทย์ยากให้เป็นเรื่องง่ายกันเลย!
                 </p>
 
                 <button
                   onClick={handleCreateNew}
-                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transform hover:-translate-y-1 flex items-center justify-center gap-3"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
                 >
-                  <div className="p-1 bg-white/20 rounded-lg">
-                    <FolderPlus className="w-6 h-6" />
-                  </div>
-                  <span>เริ่มสร้างเอกสารชิ้นแรก</span>
+                  <FolderPlus className="w-5 h-5" />
+                  <span>เริ่มสร้างเอกสารแรก</span>
                 </button>
               </div>
             )}

@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { DocumentPreview } from '@/components/DocumentPreview';
-import { CourseDocument, HeaderFooterConfig, DEFAULT_HEADER_FOOTER_CONFIG, Section } from '@/types';
+import { CourseDocument, HeaderFooterConfig, DEFAULT_HEADER_FOOTER_CONFIG, Section, DocumentMetadata } from '@/types';
 
 import { AppendJsonModal } from '@/components/AppendJsonModal';
-import { Save, Download, Printer, FileText, Edit3, Eye, EyeOff, FilePlus, Undo2, Redo2, Eraser, Plus, Minus } from 'lucide-react';
+import { MetadataModal } from '@/components/MetadataModal';
+import { Save, Download, Printer, FileText, Edit3, Eye, EyeOff, FilePlus, Undo2, Redo2, Eraser, Plus, Minus, Info } from 'lucide-react';
 import { getDocument, saveDocument } from '@/lib/storage';
 
 const STORAGE_KEY = 'teaching-docs-header-footer-config';
@@ -46,6 +47,7 @@ export default function EditorPage() {
     const [headerFooterConfig, setHeaderFooterConfig] = useState<HeaderFooterConfig>(DEFAULT_HEADER_FOOTER_CONFIG);
     const [isLoading, setIsLoading] = useState(true);
     const [showAppendModal, setShowAppendModal] = useState(false);
+    const [showMetadataModal, setShowMetadataModal] = useState(false); // New State
     const [fontSizeLevel, setFontSizeLevel] = useState(0); // 0=M, 1=L, 2=XL
 
     // Undo/Redo History
@@ -151,6 +153,22 @@ export default function EditorPage() {
         saveDocument(updatedDoc);
         setDocumentData(updatedDoc); // Update state with new timestamp
         alert("บันทึกข้อมูลเรียบร้อยแล้ว");
+    };
+
+    const handleSaveMetadata = (newMetadata: DocumentMetadata) => {
+        if (!documentData) return;
+        saveToHistory();
+
+        const updatedDoc = {
+            ...documentData,
+            documentMetadata: {
+                ...newMetadata,
+                updatedAt: new Date().toISOString()
+            }
+        };
+
+        setDocumentData(updatedDoc);
+        saveDocument(updatedDoc);
     };
 
     // Handle saving config
@@ -323,11 +341,21 @@ export default function EditorPage() {
                                 saveDocument(newDoc);
                                 alert('ล้างแท็กขยะเรียบร้อยแล้ว!');
                             }}
-                            className="p-2.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition"
+                            className="p-2.5 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-full transition hidden sm:inline-flex"
                             title="ล้างขยะ AI"
                         >
                             <Eraser className="w-5 h-5" />
                         </button>
+
+                        {/* Metadata/Settings Button */}
+                        <button
+                            onClick={() => setShowMetadataModal(true)}
+                            className="p-2.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition"
+                            title="ข้อมูลเอกสาร/หมวดหมู่"
+                        >
+                            <Info className="w-5 h-5" />
+                        </button>
+
                         <button
                             onClick={() => setShowAppendModal(true)}
                             className="p-2.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full transition"
@@ -375,6 +403,13 @@ export default function EditorPage() {
                 isOpen={showAppendModal}
                 onClose={() => setShowAppendModal(false)}
                 onAppend={handleAppend}
+            />
+
+            <MetadataModal
+                isOpen={showMetadataModal}
+                onClose={() => setShowMetadataModal(false)}
+                metadata={documentData.documentMetadata}
+                onSave={handleSaveMetadata}
             />
         </div >
     );

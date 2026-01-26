@@ -96,9 +96,41 @@ const isValidSection = (item: any): boolean => {
 const tryAdaptItem = (item: any): Section | null => {
     const id = crypto.randomUUID();
 
-    // 1. Exam/Exercise Detection (Key indicators: question_text, choices, options, correct_answer)
+    // 1. Exam/Exercise Detection
     if (isExamItem(item)) {
-        // If it's a SINGLE question object, wrap it in a section
+        // Check if it has choices/options -> treat as Exam Section
+        const hasOptions = item.choices?.length > 0 || item.options?.length > 0;
+
+        if (hasOptions) {
+            return {
+                id,
+                type: 'exam',
+                title: item.topic || item.title || 'แบบทดสอบ (Imported)',
+                questions: [{
+                    id: crypto.randomUUID(),
+                    text: item.question_text || item.question || '',
+                    options: item.choices || item.options || [],
+                    // Calculate correct index
+                    correctOption: (() => {
+                        const ans = item.correct_answer || item.answer;
+                        const opts = item.choices || item.options || [];
+                        if (ans === undefined || ans === null) return 0;
+                        if (typeof ans === 'number') return ans;
+                        const idx = opts.findIndex((c: string) => c === ans || c.startsWith(ans));
+                        if (idx !== -1) return idx;
+                        const cleanAns = String(ans).replace(/[.()]/g, '').trim().toLowerCase();
+                        const map: Record<string, number> = { 'ก': 0, 'ข': 1, 'ค': 2, 'ง': 3, 'a': 0, 'b': 1, 'c': 2, 'd': 3, '1': 0, '2': 1, '3': 2, '4': 3 };
+                        return map[cleanAns] !== undefined ? map[cleanAns] : 0;
+                    })(),
+                    explanation: Array.isArray(item.step_by_step_solution)
+                        ? item.step_by_step_solution.join('\n\n')
+                        : (item.step_by_step_solution || item.detailedSolution || ''),
+                    graphic_code: item.graphic_code
+                }]
+            };
+        }
+
+        // If no choices, treat as Exercise (Text/Subjective)
         return {
             id,
             type: 'exercise',
@@ -163,9 +195,28 @@ const adaptQuestionToExerciseItem = (q: any) => {
 const adoptExamOrExercise = (data: any): Section[] => {
     const id = crypto.randomUUID();
     const title = data.topic || data.title || 'แบบทดสอบ';
-    // Use heuristic: if it has "step_by_step_solution", prefer exercise. If choices and correct_answer, favor exam?
-    // User often wants "Exam" format if possible.
-    const type: SectionType = data.type || (data.content_type === 'exercise' ? 'exercise' : 'exam');
+
+    // Check if questions contain choices to determine if it should be an exam
+    const hasLengthyChoices = (data.questions || []).some((q: any) =>
+        (q.choices && q.choices.length > 0) || (q.options && q.options.length > 0)
+    );
+
+    // Use heuristic: if it has choices, it MUST be an exam to render them.
+    // If explicit type is provided, respect it unless it conflicts with data shape (e.g. exercise with choices).
+    // If no type, default to exam if choices exist, else check content_type.
+    let type: SectionType = data.type;
+
+    if (!type) {
+        if (hasLengthyChoices) {
+            type = 'exam';
+        } else {
+            type = (data.content_type === 'exercise' ? 'exercise' : 'exam');
+        }
+    } else if (type === 'exercise' && hasLengthyChoices) {
+        // Force upgrade to exam if we detect choices, because Exercise renderer cannot show choices.
+        console.warn('Converting Exercise to Exam because choices were detected.');
+        type = 'exam';
+    }
 
     // Helper to convert "ก." or "A." to index
     const getCorrectIndex = (ans: any, choices: string[]) => {

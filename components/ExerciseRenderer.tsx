@@ -84,7 +84,7 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                                         <div>
                                             <div className={`font-bold opacity-70 mb-1 uppercase tracking-wider text-xs`}>Method</div>
                                             <div className="">
-                                                <RichText content={item.detailedSolution} />
+                                                <RichText content={item.detailedSolution} inlineParagraphs={false} />
                                             </div>
                                         </div>
                                     )}

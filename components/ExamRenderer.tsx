@@ -111,7 +111,7 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
                                         <div className="shrink-0 text-xl">💡</div>
                                         <div className={`leading-relaxed ${sizeText}`}>
                                             <span className="font-bold mb-1 opacity-70 block text-xs uppercase tracking-wider">Solution</span>
-                                            <RichText content={q.explanation} />
+                                            <RichText content={q.explanation} inlineParagraphs={false} />
                                         </div>
                                     </>
                                 )}

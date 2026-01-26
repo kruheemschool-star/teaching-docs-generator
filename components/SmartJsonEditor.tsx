@@ -40,6 +40,32 @@ export const SmartJsonEditor: React.FC<SmartJsonEditorProps> = ({ value, onChang
             wasFixed = true;
         }
 
+        // 4. Strip Markdown Code Blocks (```json ... ```)
+        if (fixed.includes('```')) {
+            fixed = fixed
+                .replace(/^```json\s*/g, '')
+                .replace(/^```\s*/g, '')
+                .replace(/\s*```$/g, '')
+                .replace(/\s*```\s*$/g, ''); // Robust trailing check
+            wasFixed = true;
+        }
+
+        // 5. Fix Unquoted Keys (e.g. { key: "value" } -> { "key": "value" })
+        // Use a simple regex that targets standard identifiers at the start of object props
+        if (/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g.test(fixed)) {
+            fixed = fixed.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+            wasFixed = true;
+        }
+
+        // 6. Fix Missing Commas between items (e.g. "A" "B" -> "A", "B")
+        // Target: ending quote/number/bool/null, newline/space, starting quote/brace/bracket
+        // This is aggressive but solves the user's specific copy-paste issue
+        const missingCommaRegex = /(")\s*(\n\s*)(")/g;
+        if (missingCommaRegex.test(fixed)) {
+            fixed = fixed.replace(missingCommaRegex, '$1,$2$3');
+            wasFixed = true;
+        }
+
         // 4. Try to Parse and format
         try {
             // Attempt parse

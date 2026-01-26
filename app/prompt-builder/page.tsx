@@ -75,7 +75,8 @@ const WRITING_TONES = [
 const SUMMARY_TONES = [
     { value: "brief", label: "สรุปย่อ", description: "เน้นสั้น กระชับ เอาเฉพาะใจความสำคัญที่สุด" },
     { value: "detailed", label: "ละเอียด", description: "เก็บทุกประเด็นสำคัญ พร้อมตัวอย่างประกอบ" },
-    { value: "bullet", label: "Bullet Points", description: "สรุปเป็นข้อย่อยๆ อ่านง่าย สบายตา" }
+    { value: "bullet", label: "Bullet Points", description: "สรุปเป็นข้อย่อยๆ อ่านง่าย สบายตา" },
+    { value: "fun", label: "เข้าใจง่าย & สนุก", description: "ใช้ภาษาเป็นกันเอง เปรียบเทียบให้เห็นภาพ เหมือนเพื่อนเล่าให้ฟัง" }
 ];
 
 const CONTENT_ELEMENTS = [
@@ -250,7 +251,7 @@ export default function PromptBuilder() {
 องค์ประกอบ: ${contentElements.join(", ")}`;
         } else if (contentType === "video-summary") {
             dynamicInputs += `
-โทนการสรุป: ${SUMMARY_TONES.find(t => t.value === summaryTone)?.label}`;
+            โทนการสรุป: ${SUMMARY_TONES.find(t => t.value === summaryTone)?.label} (${SUMMARY_TONES.find(t => t.value === summaryTone)?.description})`;
 
             if (inputSource === "youtube" && youtubeUrl) {
                 dynamicInputs += `\nลิงก์ YouTube: ${youtubeUrl}`;
@@ -318,7 +319,7 @@ export default function PromptBuilder() {
 }`;
         }
 
-        const part3_Constraints = `คำสั่งสำคัญ: จงส่งคืนผลลัพธ์เป็นโครงสร้าง JSON ตามรูปแบบด้านล่างนี้เท่านั้น ห้ามมีข้อความเกริ่นนำ ห้ามมีคำลงท้าย และห้ามครอบด้วย Markdown code block (\`\`\`json) ใดๆ ทั้งสิ้น
+        const part3_Constraints = `คำสั่งสำคัญ: จงส่งคืนผลลัพธ์เป็นโครงสร้าง JSON ตามรูปแบบด้านล่างนี้เท่านั้น โดยต้องครอบด้วย Markdown code block (\`\`\`json ... \`\`\`) เสมอ เพื่อให้ง่ายต่อการคัดลอก ห้ามมีข้อความเกริ่นนำ หรือคำลงท้ายอื่น ๆ นอกเหนือจาก Code Block
 
 รูปแบบ JSON ที่ต้องการ:
 ${schemaDefinition}
@@ -416,8 +417,8 @@ ${specificInstructions}
                                                 key={type.id}
                                                 onClick={() => setContentType(type.id)}
                                                 className={`group relative p-3 rounded-lg border text-left transition-all ${contentType === type.id
-                                                        ? "border-black bg-blue-50/50 ring-1 ring-black/5 shadow-sm"
-                                                        : "border-gray-200 bg-white hover:border-gray-300"
+                                                    ? "border-black bg-blue-50/50 ring-1 ring-black/5 shadow-sm"
+                                                    : "border-gray-200 bg-white hover:border-gray-300"
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -464,8 +465,8 @@ ${specificInstructions}
                                                             key={source.id}
                                                             onClick={() => setInputSource(source.id as any)}
                                                             className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${inputSource === source.id
-                                                                    ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
-                                                                    : "text-gray-500 hover:text-gray-700"
+                                                                ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
+                                                                : "text-gray-500 hover:text-gray-700"
                                                                 }`}
                                                         >
                                                             <source.icon className="w-3 h-3" />
@@ -598,8 +599,8 @@ ${specificInstructions}
                                                     key={style.value}
                                                     onClick={() => setQuestionStyle(style.value)}
                                                     className={`group relative px-3 py-2.5 text-left text-sm rounded-lg border transition-all ${questionStyle === style.value
-                                                            ? "bg-blue-50/50 border-black text-black font-bold ring-1 ring-black/5 shadow-sm"
-                                                            : "bg-white border-gray-200 hover:border-gray-300 text-gray-500"
+                                                        ? "bg-blue-50/50 border-black text-black font-bold ring-1 ring-black/5 shadow-sm"
+                                                        : "bg-white border-gray-200 hover:border-gray-300 text-gray-500"
                                                         }`}
                                                 >
                                                     <div className="flex items-center justify-between">
@@ -634,8 +635,8 @@ ${specificInstructions}
                                                     key={tone.value}
                                                     onClick={() => setWritingTone(tone.value)}
                                                     className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${writingTone === tone.value
-                                                            ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
-                                                            : "text-gray-500 hover:text-gray-700"
+                                                        ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
+                                                        : "text-gray-500 hover:text-gray-700"
                                                         }`}
                                                 >
                                                     {tone.label}
@@ -679,8 +680,8 @@ ${specificInstructions}
                                                     key={tone.value}
                                                     onClick={() => setSummaryTone(tone.value)}
                                                     className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${summaryTone === tone.value
-                                                            ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
-                                                            : "text-gray-500 hover:text-gray-700"
+                                                        ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
+                                                        : "text-gray-500 hover:text-gray-700"
                                                         }`}
                                                 >
                                                     {tone.label}
@@ -728,10 +729,10 @@ ${specificInstructions}
                                 <div className="p-4 bg-[#1e1e1e] border-t border-gray-800">
                                     <button
                                         className={`w-full h-10 text-sm font-medium transition-all rounded-md flex items-center justify-center ${!generatedPrompt || !isFormValid
-                                                ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
-                                                : isCopied
-                                                    ? "bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-900/20 transform scale-[1.02]"
-                                                    : "bg-white text-black hover:bg-gray-200"
+                                            ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
+                                            : isCopied
+                                                ? "bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-900/20 transform scale-[1.02]"
+                                                : "bg-white text-black hover:bg-gray-200"
                                             }`}
                                         onClick={copyToClipboard}
                                         disabled={!generatedPrompt || !isFormValid}

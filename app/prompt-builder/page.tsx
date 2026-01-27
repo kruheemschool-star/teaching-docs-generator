@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { getTopics, SEMESTERS, Semester, Chapter, ClassLevel } from '@/lib/curriculumData';
 
 const SUBJECTS = [
-    "คณิตศาสตร์", "วิทยาศาสตร์", "ภาษาไทย", "ภาษาอังกฤษ", "สังคมศึกษา", "ประวัติศาสตร์", "สุขศึกษา", "ศิลปะ", "การงานอาชีพ", "คอมพิวเตอร์"
+    "คณิตศาสตร์", "วิทยาศาสตร์", "ภาษาไทย", "ภาษาอังกฤษ", "สังคมศึกษา", "ประวัติศาสตร์", "สุขศึกษา", "คอมพิวเตอร์"
 ];
 
 const GRADES = [
@@ -152,6 +152,7 @@ export default function PromptBuilder() {
     const [gradeLevel, setGradeLevel] = useState("ม.1");
     const [semester, setSemester] = useState<Semester>("semester1"); // New Semester State
     const [subject, setSubject] = useState("คณิตศาสตร์");
+    const [subjectType, setSubjectType] = useState<"basic" | "advanced">("basic"); // New Subject Type State
     const [customTopic, setCustomTopic] = useState("");
     const [customSubTopic, setCustomSubTopic] = useState(""); // Custom Subtopic
     const [highlightTopic, setHighlightTopic] = useState(false);
@@ -163,8 +164,8 @@ export default function PromptBuilder() {
     // Computed: Available Chapters based on selection
     const availableChapters = useMemo(() => {
         // Now supports both Primary (ป.) and Secondary (ม.) levels
-        if (subject === "คณิตศาสตร์") {
-            return getTopics(gradeLevel as ClassLevel, semester);
+        if (gradeLevel) {
+            return getTopics(gradeLevel, semester, subjectType, subject);
         }
         return [];
     }, [gradeLevel, semester, subject]);
@@ -231,7 +232,7 @@ export default function PromptBuilder() {
 
             if (subVal) topicStr += `: ${subVal}`;
 
-            return `${subject} เรื่อง ${topicStr} (${SEMESTERS.find(s => s.value === semester)?.label})`;
+            return `${subject}${subjectType === 'advanced' ? 'เพิ่มเติม' : 'พื้นฐาน'} เรื่อง ${topicStr} (${SEMESTERS.find(s => s.value === semester)?.label})`;
         }
         if (customTopic.trim()) return customTopic;
         return `${subject} เรื่อง ...`;
@@ -625,6 +626,46 @@ ${specificInstructions}
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Subject Type Selector for Secondary Math */}
+                                    {subject === "คณิตศาสตร์" && (["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6", "ปวช.", "ปวส."].includes(gradeLevel)) && (
+                                        <div className="mt-4 animate-in fade-in zoom-in duration-300">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-1/3">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">ประเภทวิชา</label>
+                                                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                                                        <button
+                                                            onClick={() => setSubjectType("basic")}
+                                                            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${subjectType === "basic"
+                                                                ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
+                                                                : "text-gray-500 hover:text-gray-700"
+                                                                }`}
+                                                        >
+                                                            พื้นฐาน
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setSubjectType("advanced")}
+                                                            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${subjectType === "advanced"
+                                                                ? "bg-white shadow-sm text-purple-600 ring-1 ring-purple-100 font-bold"
+                                                                : "text-gray-500 hover:text-gray-700"
+                                                                }`}
+                                                        >
+                                                            เพิ่มเติม
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="w-2/3">
+                                                    {/* Spacer or description */}
+                                                    {subjectType === 'advanced' && (
+                                                        <div className="text-xs text-purple-600 bg-purple-50 px-3 py-2 rounded-lg border border-purple-100 flex items-center gap-2 mt-6">
+                                                            <Sparkles className="w-3 h-3" />
+                                                            <span>คณิตศาสตร์เพิ่มเติม จะเน้นความลึกและซับซ้อนกว่าพื้นฐาน</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Topic Input - Validated */}
                                     <div>

@@ -60,7 +60,7 @@ export default function EditorPage() {
     // storing future states (for redo)
     const [redoStack, setRedoStack] = useState<CourseDocument[]>([]);
 
-    // Load document - LocalStorage First (Hybrid)
+    // Load document - LocalStorage First -> Then Cloud
     useEffect(() => {
         setHeaderFooterConfig(loadConfig());
 
@@ -70,7 +70,6 @@ export default function EditorPage() {
             return;
         }
 
-        console.log("Loading document from LocalStorage...", id);
         const localDoc = getDocument(id);
 
         if (localDoc) {
@@ -78,28 +77,45 @@ export default function EditorPage() {
             setDocumentData(localDoc);
             setIsLoading(false);
 
-            // Optional: Check cloud for updates in background
-            // getDocumentFromFirestore(id).then(cloudDoc => {
-            //     if (cloudDoc && new Date(cloudDoc.documentMetadata.updatedAt) > new Date(localDoc.documentMetadata.updatedAt)) {
-            //        // Prompt user to update? For now, let's stick to local master to avoid complexity.
-            //     }
-            // });
+            // Background: Check if Cloud has a newer version
+            getDocumentFromFirestore(id).then(cloudDoc => {
+                if (cloudDoc && cloudDoc.documentMetadata.updatedAt) {
+                    const localTime = new Date(localDoc.documentMetadata.updatedAt).getTime();
+                    const cloudTime = new Date(cloudDoc.documentMetadata.updatedAt).getTime();
+
+                    if (cloudTime > localTime) {
+                        if (confirm("พบเวอร์ชันที่ใหม่กว่าบน Cloud (อาจแก้ไขจากเครื่องอื่น) ต้องการดาวน์โหลดหรือไม่?")) {
+                            setDocumentData(cloudDoc);
+                            saveDocument(cloudDoc); // Update local
+                        }
+                    }
+                }
+            });
 
         } else {
-            console.log("Not found locally, initializing new document...");
-            setDocumentData({
-                documentMetadata: {
-                    id: id,
-                    title: "เอกสารใหม่",
-                    classLevel: "ม.1",
-                    semester: "เทอม 1",
-                    updatedAt: new Date().toISOString(),
-                    date: new Date().getFullYear().toString(),
-                    instructor: "AI Teacher"
-                },
-                sections: []
+            console.log("Not found locally, checking Cloud...");
+            getDocumentFromFirestore(id).then((cloudDoc) => {
+                if (cloudDoc) {
+                    console.log("Found in Cloud");
+                    setDocumentData(cloudDoc);
+                    saveDocument(cloudDoc); // Cache locally
+                } else {
+                    console.log("Not found in Cloud, initializing new...");
+                    setDocumentData({
+                        documentMetadata: {
+                            id: id,
+                            title: "เอกสารใหม่",
+                            classLevel: "ม.1",
+                            semester: "เทอม 1",
+                            updatedAt: new Date().toISOString(),
+                            date: new Date().getFullYear().toString(),
+                            instructor: "AI Teacher"
+                        },
+                        sections: []
+                    });
+                }
+                setIsLoading(false);
             });
-            setIsLoading(false);
         }
     }, [id]);
 

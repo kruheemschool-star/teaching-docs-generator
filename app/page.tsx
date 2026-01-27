@@ -9,6 +9,7 @@ import { FolderCard } from '@/components/FolderCard';
 import { MoveDocumentModal } from '@/components/MoveDocumentModal';
 import { ImportJsonModal } from '@/components/ImportJsonModal';
 import { BackupModal } from '@/components/BackupModal';
+import FirestoreDebug from '@/components/FirestoreDebug';
 
 // Local Storage Utils (Only for Migration check)
 import { getAllDocuments as getLocalDocuments } from '@/lib/storage';
@@ -491,6 +492,8 @@ export default function Dashboard() {
           </button>
         </div>
       )}
+      {/* Debug Tool */}
+      <FirestoreDebug />
     </div>
   );
 }

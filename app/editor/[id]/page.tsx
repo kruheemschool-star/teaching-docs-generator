@@ -103,24 +103,14 @@ export default function EditorPage() {
         }
     }, [id]);
 
-    // Auto-Save Logic (Hybrid: Local + Cloud)
+    // Auto-Save Logic (Local Only)
     useEffect(() => {
         if (!documentData) return;
 
         const timeoutId = setTimeout(() => {
             // 1. Save Locally (Primary & Instant)
-            console.log("Auto-saving to LocalStorage...", documentData.documentMetadata.title);
             saveDocument(documentData);
-
-            // 2. Save to Cloud (Background)
-            setCloudStatus('saving');
-            saveDocumentToFirestore(documentData)
-                .then(() => setCloudStatus('saved'))
-                .catch((e) => {
-                    console.warn("Cloud save failed (offline)", e);
-                    setCloudStatus('error');
-                });
-
+            // NOTE: Cloud Auto-save removed as per "Manual Save" requirement.
         }, 1000); // 1 second debounce
 
         return () => clearTimeout(timeoutId);
@@ -173,9 +163,13 @@ export default function EditorPage() {
         setDocumentData(updatedDoc);
     };
 
-    // Manual Save Handler
+    // ... (history logic) ...
+
+    // Manual Save Handler (The "Publish" Button)
     const handleSave = () => {
         if (!documentData) return;
+
+        setCloudStatus('saving'); // Show loading spinner
 
         // Update timestamp
         const updatedDoc = {
@@ -186,20 +180,20 @@ export default function EditorPage() {
             }
         };
 
-        // Local Save (Sync)
+        // 1. Local Save (Instant)
         saveDocument(updatedDoc);
         setDocumentData(updatedDoc);
 
-        // Cloud Save (Async)
-        setCloudStatus('saving');
+        // 2. Cloud Save (The "Broadcast")
         saveDocumentToFirestore(updatedDoc)
             .then(() => {
                 setCloudStatus('saved');
-                alert("บันทึกข้อมูลเรียบร้อยแล้ว (Local + Cloud)");
+                alert("✅ บันทึกและเผยแพร่ข้อมูลเรียบร้อยแล้ว!");
             })
-            .catch(() => {
+            .catch((e) => {
+                console.error(e);
                 setCloudStatus('error');
-                alert("บันทึกข้อมูลลงเครื่องเรียบร้อย (Cloud ไม่สำเร็จ - Offline)");
+                alert("❌ บันทึกไม่สำเร็จ (ตรวจสอบอินเทอร์เน็ต)");
             });
     };
 
@@ -231,11 +225,24 @@ export default function EditorPage() {
 
         saveToHistory(); // Save state before append
 
+        // Check if we should auto-update the title
+        let newTitle = documentData.documentMetadata.title;
+        if ((!newTitle || newTitle.includes("เอกสารใหม่") || newTitle.includes("New Document")) && newSections.length > 0) {
+            // Try to find a good title from the new sections
+            const firstSection = newSections[0] as any;
+            if (firstSection.title && firstSection.title !== "Imported JSON") {
+                newTitle = firstSection.title;
+            } else if (firstSection.topic) {
+                newTitle = firstSection.topic;
+            }
+        }
+
         const updatedDoc = {
             ...documentData,
             sections: [...documentData.sections, ...newSections],
             documentMetadata: {
                 ...documentData.documentMetadata,
+                title: newTitle,
                 updatedAt: new Date().toISOString()
             }
         };
@@ -364,8 +371,8 @@ export default function EditorPage() {
                 {/* Cloud Status Indicator */}
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 text-xs font-medium">
                     <div className={`w-2 h-2 rounded-full ${cloudStatus === 'saved' ? 'bg-green-500' :
-                            cloudStatus === 'saving' ? 'bg-yellow-500 animate-pulse' :
-                                'bg-red-500'
+                        cloudStatus === 'saving' ? 'bg-yellow-500 animate-pulse' :
+                            'bg-red-500'
                         }`}></div>
                     <span className="text-gray-500 dark:text-gray-400">
                         {cloudStatus === 'saved' ? 'Cloud Saved' :

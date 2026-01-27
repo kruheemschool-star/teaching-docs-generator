@@ -160,9 +160,15 @@ export default function Dashboard() {
     // if (title === null) return; // Cancelled
 
     // Smart Title Generation based on context logic
-    // For now, let's just make sure the topic is passed correctly so it shows up in the UI
+    let initialTitle = "เอกสารใหม่";
+    if (filterTopic !== "all") {
+      initialTitle = `เอกสาร${filterTopic}`;
+    } else if (filterClass !== "all") {
+      initialTitle = `เอกสาร ${filterClass}`;
+    }
+
     const newDoc = await createDocumentInFirestore(
-      "เอกสารใหม่", // title
+      initialTitle, // title
       filterClass !== "all" ? filterClass : "ม.1", // classLevel
       filterTerm !== "all" ? filterTerm : "เทอม 1", // semester
       defaultTopic // topic

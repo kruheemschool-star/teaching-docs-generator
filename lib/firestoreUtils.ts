@@ -27,20 +27,22 @@ export const migrateToFirestore = async () => {
         // 1. Migrate Folders
         for (const folder of backup.folders) {
             const ref = doc(db, COLLECTION_FOLDERS, folder.id);
-            batch.set(ref, {
+            const cleanFolder = sanitizeForFirestore({
                 ...folder,
                 migratedAt: serverTimestamp()
             });
+            batch.set(ref, cleanFolder);
             count++;
         }
 
         // 2. Migrate Documents
         for (const d of backup.documents) {
             const ref = doc(db, COLLECTION_DOCS, d.documentMetadata.id);
-            batch.set(ref, {
+            const cleanDoc = sanitizeForFirestore({
                 ...d,
                 migratedAt: serverTimestamp()
             });
+            batch.set(ref, cleanDoc);
             count++;
         }
 

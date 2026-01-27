@@ -3,6 +3,7 @@ import { LessonSection, AnyBlock, DocumentMetadata } from '@/types';
 import { BlockEditor, convertLessonToBlocks } from './BlockRenderer';
 import { BookOpen, GraduationCap, Layout } from 'lucide-react';
 import { RichText } from './RichText';
+import { PinButton } from './PinButton';
 
 interface LessonRendererProps {
     section: LessonSection;
@@ -88,9 +89,19 @@ export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditi
                                     {metadata?.subtopic && <span className="text-gray-600 font-medium">{metadata.subtopic}</span>}
                                 </div>
 
+
+
                                 {/* Section Title */}
-                                <div className="text-2xl font-bold text-gray-900 leading-tight [&_.prose]:text-2xl [&_.prose]:font-bold [&_.prose_p]:text-2xl [&_.prose_p]:font-bold">
-                                    <RichText content={section.title || "บทเรียน"} />
+                                <div className="text-2xl font-bold text-gray-900 leading-tight [&_.prose]:text-2xl [&_.prose]:font-bold [&_.prose_p]:text-2xl [&_.prose_p]:font-bold flex items-start gap-3 group/title">
+                                    <div className="flex-1">
+                                        <RichText content={section.title || "บทเรียน"} />
+                                    </div>
+                                    <PinButton
+                                        documentId={metadata?.id || 'unknown'}
+                                        sectionId={section.id}
+                                        title={section.title || "บทเรียน"}
+                                        className="mt-1 opacity-0 group-hover/title:opacity-100 transition-opacity"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -105,6 +116,7 @@ export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditi
                     showAnswers={showAnswers}
                     onChange={handleBlocksChange}
                     fontSizeLevel={fontSizeLevel}
+                    documentId={metadata?.id || 'unknown'}
                 />
             </div>
         </div>

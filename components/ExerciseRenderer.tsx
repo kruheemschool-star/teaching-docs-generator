@@ -1,6 +1,7 @@
 import React from 'react';
 import { ExerciseSection, DocumentMetadata } from '@/types';
 import { RichText } from './RichText';
+import { PinButton } from './PinButton';
 import { BookOpen, CheckSquare } from 'lucide-react';
 
 interface ExerciseRendererProps {
@@ -60,8 +61,18 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                             {metadata?.subtopic && <span className="text-gray-600 font-medium">{metadata.subtopic}</span>}
                         </div>
 
-                        <div className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight [&_.prose]:text-inherit [&_.prose]:leading-inherit [&_.prose_p]:text-inherit [&_.prose_p]:font-bold`}>
-                            <RichText content={section.title || "แบบฝึกหัด"} />
+
+
+                        <div className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight [&_.prose]:text-inherit [&_.prose]:leading-inherit [&_.prose_p]:text-inherit [&_.prose_p]:font-bold flex items-start gap-3 group/title`}>
+                            <div className="flex-1">
+                                <RichText content={section.title || "แบบฝึกหัด"} />
+                            </div>
+                            <PinButton
+                                documentId={metadata?.id || 'unknown'}
+                                sectionId={section.id}
+                                title={section.title || "แบบฝึกหัด"}
+                                className="mt-1 opacity-0 group-hover/title:opacity-100 transition-opacity"
+                            />
                         </div>
                     </div>
                 </div>
@@ -74,97 +85,109 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
             )}
 
             <div className="space-y-8">
-                {section.items.map((item, index) => (
-                    <div key={item.id || index} className="break-inside-avoid">
-                        <div className={`flex gap-3 mb-2 font-medium ${sizeNumber} text-[#37352F]`}>
-                            <span className="font-bold whitespace-nowrap opacity-60">{index + 1}.</span>
-                            <div className="flex-1">
-                                {item.difficulty && getDifficultyBadge(item.difficulty, fontSizeLevel)}
-                                <div className="inline leading-relaxed">
-                                    <RichText content={item.question} />
+                {section.items.map((item, index) => {
+                    const itemId = item.id || `${section.id}-item-${index}`;
+                    return (
+                        <div key={itemId} id={itemId} className="break-inside-avoid relative group/item">
+                            <div className={`flex gap-3 mb-2 font-medium ${sizeNumber} text-[#37352F]`}>
+                                <div className="flex items-start gap-1">
+                                    <span className="font-bold whitespace-nowrap opacity-60">{index + 1}.</span>
+                                    {/* Pin Button for Item */}
+                                    <div className="opacity-0 group-hover/item:opacity-100 transition-opacity mt-1">
+                                        <PinButton
+                                            documentId={metadata?.id || 'unknown'}
+                                            sectionId={itemId}
+                                            title={`ข้อที่ ${index + 1}: ${(item.question || "").slice(0, 20)}...`}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    {item.difficulty && getDifficultyBadge(item.difficulty, fontSizeLevel)}
+                                    <div className="inline leading-relaxed">
+                                        <RichText content={item.question} />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* SVG Graphic Rendering */}
-                        {item.graphic_code && (
-                            <div className="my-4 flex justify-start pl-8">
-                                <div
-                                    className="bg-white p-4 rounded border border-[#E1E1E0] flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
-                                    dangerouslySetInnerHTML={{ __html: item.graphic_code }}
-                                />
-                            </div>
-                        )}
+                            {/* SVG Graphic Rendering */}
+                            {item.graphic_code && (
+                                <div className="my-4 flex justify-start pl-8">
+                                    <div
+                                        className="bg-white p-4 rounded border border-[#E1E1E0] flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
+                                        dangerouslySetInnerHTML={{ __html: item.graphic_code }}
+                                    />
+                                </div>
+                            )}
 
-                        {/* Show Solution if toggled ON */}
-                        {showAnswers ? (
-                            <div className="ml-8 mt-3 rounded-md bg-[#F1F1EF] p-4 text-[#37352F] flex flex-col gap-4">
+                            {/* Show Solution if toggled ON */}
+                            {showAnswers ? (
+                                <div className="ml-8 mt-3 rounded-md bg-[#F1F1EF] p-4 text-[#37352F] flex flex-col gap-4">
 
-                                {/* 1. Key Concept */}
-                                {item.key_concept && (
-                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
-                                        <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
-                                            🔑 Concept (หลักการ)
-                                        </div>
-                                        <div className={sizeText}>
-                                            <RichText content={item.key_concept} inlineParagraphs={false} />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* 2. Answer & Detailed Solution */}
-                                <div className={`${sizeText} leading-relaxed w-full`}>
-                                    {item.answer && (
-                                        <div className={`mb-3 flex items-baseline gap-2 ${sizeText}`}>
-                                            <span className="font-bold opacity-70 text-sm uppercase tracking-wider shrink-0">Answer:</span>
-                                            <span className="font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
-                                                <RichText content={item.answer} />
-                                            </span>
+                                    {/* 1. Key Concept */}
+                                    {item.key_concept && (
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
+                                            <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                                                🔑 Concept (หลักการ)
+                                            </div>
+                                            <div className={sizeText}>
+                                                <RichText content={item.key_concept} inlineParagraphs={false} />
+                                            </div>
                                         </div>
                                     )}
-                                    {item.detailedSolution && (
-                                        <div>
-                                            <div className={`font-bold opacity-70 mb-1 uppercase tracking-wider text-xs`}>Method</div>
-                                            <div className="pl-2 border-l-2 border-gray-300">
-                                                <RichText content={item.detailedSolution} inlineParagraphs={false} />
+
+                                    {/* 2. Answer & Detailed Solution */}
+                                    <div className={`${sizeText} leading-relaxed w-full`}>
+                                        {item.answer && (
+                                            <div className={`mb-3 flex items-baseline gap-2 ${sizeText}`}>
+                                                <span className="font-bold opacity-70 text-sm uppercase tracking-wider shrink-0">Answer:</span>
+                                                <span className="font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
+                                                    <RichText content={item.answer} />
+                                                </span>
+                                            </div>
+                                        )}
+                                        {item.detailedSolution && (
+                                            <div>
+                                                <div className={`font-bold opacity-70 mb-1 uppercase tracking-wider text-xs`}>Method</div>
+                                                <div className="pl-2 border-l-2 border-gray-300">
+                                                    <RichText content={item.detailedSolution} inlineParagraphs={false} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 3. Common Mistakes */}
+                                    {item.common_mistakes && (
+                                        <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-100 dark:border-red-800">
+                                            <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                ⚠️ Caution (จุดที่มักผิด)
+                                            </div>
+                                            <div className={sizeText}>
+                                                <RichText content={item.common_mistakes} inlineParagraphs={false} />
                                             </div>
                                         </div>
                                     )}
                                 </div>
-
-                                {/* 3. Common Mistakes */}
-                                {item.common_mistakes && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-100 dark:border-red-800">
-                                        <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                            ⚠️ Caution (จุดที่มักผิด)
-                                        </div>
-                                        <div className={sizeText}>
-                                            <RichText content={item.common_mistakes} inlineParagraphs={false} />
-                                        </div>
+                            ) : (
+                                // Else show lines regarding spaceForWork logic (Student Mode)
+                                item.spaceForWork && (
+                                    <div className="ml-8 mt-4 space-y-8 opacity-50">
+                                        {Array.from({ length: item.lines || 3 }).map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className="border-b border-dashed border-[#E1E1E0] h-6 w-full"
+                                            />
+                                        ))}
                                     </div>
-                                )}
-                            </div>
-                        ) : (
-                            // Else show lines regarding spaceForWork logic (Student Mode)
-                            item.spaceForWork && (
-                                <div className="ml-8 mt-4 space-y-8 opacity-50">
-                                    {Array.from({ length: item.lines || 3 }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className="border-b border-dashed border-[#E1E1E0] h-6 w-full"
-                                        />
-                                    ))}
-                                </div>
-                            )
-                        )}
+                                )
+                            )}
 
-                        {/* Divider */}
-                        {index < section.items.length - 1 && (
-                            <div className="h-px bg-[#E1E1E0] mt-8 opacity-50 ml-8"></div>
-                        )}
-                    </div>
-                ))
-                }
+                            {/* Divider */}
+                            {index < section.items.length - 1 && (
+                                <div className="h-px bg-[#E1E1E0] mt-8 opacity-50 ml-8"></div>
+                            )}
+                        </div>
+                    );
+                })}
             </div >
         </div >
     );

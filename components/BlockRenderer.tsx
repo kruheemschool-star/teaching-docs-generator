@@ -16,6 +16,7 @@ import {
     GraphBlock,
     PracticeBlock
 } from '../types';
+import { PinButton } from './PinButton';
 
 // ==========================================
 // 1. ADAPTER: Convert legacy data to blocks
@@ -254,7 +255,7 @@ const AutoResizeTextarea = ({
 // 2. BLOCK COMPONENTS
 // ==========================================
 
-const TextBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: { block: TextBlock, editing: boolean, onUpdate: (content: string) => void, fontSizeLevel?: number }) => {
+const TextBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0, documentId }: { block: TextBlock, editing: boolean, onUpdate: (content: string) => void, fontSizeLevel?: number, documentId?: string }) => {
     if (editing) {
         return (
             <AutoResizeTextarea
@@ -274,7 +275,16 @@ const TextBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: { bl
     const h3Class = fontSizeLevel === 0 ? 'text-2xl' : fontSizeLevel === 1 ? 'text-3xl' : 'text-4xl';
 
     return (
-        <div className={`prose ${proseClass} max-w-none text-gray-800`}>
+        <div className={`prose ${proseClass} max-w-none text-gray-800 relative group/textblock`}>
+            {!editing && documentId && (
+                <div className="absolute -left-8 top-0 opacity-0 group-hover/textblock:opacity-100 transition-opacity print:hidden">
+                    <PinButton
+                        documentId={documentId}
+                        sectionId={block.id} // block acts as a section here
+                        title={"ข้อความ (Text)"}
+                    />
+                </div>
+            )}
             <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
@@ -317,7 +327,7 @@ const SpacerBlockRenderer = ({ block, editing, onUpdate }: { block: SpacerBlock,
     );
 };
 
-const CalloutBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: { block: CalloutBlock, editing: boolean, onUpdate: (updates: Partial<CalloutBlock>) => void, fontSizeLevel?: number }) => {
+const CalloutBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0, documentId }: { block: CalloutBlock, editing: boolean, onUpdate: (updates: Partial<CalloutBlock>) => void, fontSizeLevel?: number, documentId?: string }) => {
     // Notion-style minimalist: All are gray backgrounds, distinguished by icon or subtle left border
     const colorClasses = {
         blue: 'bg-gray-50 border-l-4 border-gray-400 text-gray-800',
@@ -374,7 +384,16 @@ const CalloutBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: {
     const titleClass = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl';
 
     return (
-        <div className={`pl-4 py-3 pr-4 rounded-r-lg ${theme} my-4 break-inside-avoid print:border transition-all hover:bg-gray-100/50`}>
+        <div className={`pl-4 py-3 pr-4 rounded-r-lg ${theme} my-4 break-inside-avoid print:border transition-all hover:bg-gray-100/50 relative group/callout`}>
+            {!editing && documentId && (
+                <div className="absolute right-2 top-2 opacity-0 group-hover/callout:opacity-100 transition-opacity">
+                    <PinButton
+                        documentId={documentId}
+                        sectionId={block.id}
+                        title={block.title || "ข้อความเน้น (Callout)"}
+                    />
+                </div>
+            )}
             {block.title && (
                 <h4 className={`font-bold ${titleClass} mb-2 flex items-center gap-3 text-gray-900`}>
                     {block.icon && <span className="text-xl shrink-0">{block.icon}</span>}
@@ -390,7 +409,7 @@ const CalloutBlockRenderer = ({ block, editing, onUpdate, fontSizeLevel = 0 }: {
     );
 };
 
-const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, fontSizeLevel = 0 }: { block: ExampleBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean, fontSizeLevel?: number }) => {
+const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, fontSizeLevel = 0, documentId }: { block: ExampleBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean, fontSizeLevel?: number, documentId?: string }) => {
     if (editing) {
         return (
             <div className="p-5 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50 space-y-4">
@@ -426,9 +445,20 @@ const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, f
     const subTextClass = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl';
 
     return (
-        <div className="my-6 border border-gray-200 rounded-xl overflow-hidden shadow-sm break-inside-avoid example-item">
+        <div className="my-6 border border-gray-200 rounded-xl overflow-hidden shadow-sm break-inside-avoid example-item group/example">
             <div className="bg-gray-50 px-5 py-3 border-b border-gray-200 flex justify-between items-center">
-                <span className="font-bold text-gray-700">📌 ตัวอย่าง</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-700">📌 ตัวอย่าง</span>
+                    {!editing && documentId && (
+                        <div className="opacity-0 group-hover/example:opacity-100 transition-opacity">
+                            <PinButton
+                                documentId={documentId}
+                                sectionId={block.id}
+                                title={block.data.problem.slice(0, 20) + "..." || "ตัวอย่าง"}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="p-5 bg-white">
                 <div className={`font-medium ${textClass} mb-4 text-gray-900`}>
@@ -453,7 +483,7 @@ const ExampleBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, f
     );
 };
 
-const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, fontSizeLevel = 0 }: { block: PracticeBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean, fontSizeLevel?: number }) => {
+const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, fontSizeLevel = 0, documentId }: { block: PracticeBlock, editing: boolean, onUpdate: (data: LessonExample) => void, showAnswers?: boolean, fontSizeLevel?: number, documentId?: string }) => {
     if (editing) {
         return (
             <div className="p-5 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/20 space-y-4">
@@ -489,9 +519,20 @@ const PracticeBlockRenderer = ({ block, editing, onUpdate, showAnswers = false, 
     const subTextClass = fontSizeLevel === 0 ? 'text-lg' : fontSizeLevel === 1 ? 'text-xl' : 'text-2xl';
 
     return (
-        <div className="my-6 border border-purple-100 rounded-xl overflow-hidden shadow-sm break-inside-avoid practice-item">
+        <div className="my-6 border border-purple-100 rounded-xl overflow-hidden shadow-sm break-inside-avoid practice-item group/practice">
             <div className="bg-purple-50 px-5 py-3 border-b border-purple-100 flex justify-between items-center">
-                <span className="font-bold text-purple-900">✍️ ลองทำดู</span>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-purple-900">✍️ ลองทำดู</span>
+                    {!editing && documentId && (
+                        <div className="opacity-0 group-hover/practice:opacity-100 transition-opacity">
+                            <PinButton
+                                documentId={documentId}
+                                sectionId={block.id}
+                                title={block.data.problem.slice(0, 20) + "..." || "ลองทำดู"}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="p-5 bg-white">
                 <div className={`font-medium ${textClass} mb-4 text-gray-900`}>
@@ -634,7 +675,8 @@ interface BlockEditorProps {
     showAnswers?: boolean;
     onChange: (newBlocks: AnyBlock[]) => void;
     fontSizeLevel?: number; // 0=M, 1=L, 2=XL
-}export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks, isEditing, showAnswers = false, onChange, fontSizeLevel = 0 }) => {
+    documentId?: string;
+}export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks: initialBlocks, isEditing, showAnswers = false, onChange, fontSizeLevel = 0, documentId }) => {
     const [blocks, setBlocks] = useState<AnyBlock[]>(initialBlocks);
 
     useEffect(() => {
@@ -720,7 +762,7 @@ interface BlockEditorProps {
             style={isEditing ? { backgroundSize: '100% 297mm' } : {}}
         >
             {blocks.map((block, index) => (
-                <div key={block.id} className={`relative group block-item break-inside-avoid ${isEditing ? 'pl-10 pr-4 py-2 hover:bg-gray-50/50 rounded-lg transition-colors border border-transparent hover:border-gray-200' : ''}`}>
+                <div key={block.id} id={block.id} className={`relative group block-item break-inside-avoid ${isEditing ? 'pl-10 pr-4 py-2 hover:bg-gray-50/50 rounded-lg transition-colors border border-transparent hover:border-gray-200' : ''}`}>
 
                     {/* Editing Controls (Left Side) */}
                     {isEditing && (
@@ -757,6 +799,7 @@ interface BlockEditorProps {
                                 editing={isEditing}
                                 onUpdate={(content) => updateBlock(block.id, { content })}
                                 fontSizeLevel={fontSizeLevel}
+                                documentId={documentId}
                             />
                         )}
                         {block.type === 'spacer' && (
@@ -772,6 +815,7 @@ interface BlockEditorProps {
                                 editing={isEditing}
                                 onUpdate={(updates) => updateBlock(block.id, updates)}
                                 fontSizeLevel={fontSizeLevel}
+                                documentId={documentId}
                             />
                         )}
                         {block.type === 'example' && (
@@ -781,6 +825,7 @@ interface BlockEditorProps {
                                 showAnswers={showAnswers}
                                 onUpdate={(data) => updateBlockData(block.id, data)}
                                 fontSizeLevel={fontSizeLevel}
+                                documentId={documentId}
                             />
                         )}
                         {block.type === 'image' && (
@@ -808,6 +853,7 @@ interface BlockEditorProps {
                                 showAnswers={showAnswers}
                                 onUpdate={(data) => updateBlockData(block.id, data)}
                                 fontSizeLevel={fontSizeLevel}
+                                documentId={documentId}
                             />
                         )}
                     </div>

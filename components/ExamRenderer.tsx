@@ -2,6 +2,7 @@ import React from 'react';
 import { ExamSection, DocumentMetadata } from '@/types';
 import { CheckCircle2, Circle, GraduationCap } from 'lucide-react';
 import { RichText } from './RichText';
+import { PinButton } from './PinButton';
 
 interface ExamRendererProps {
     section: ExamSection;
@@ -61,124 +62,147 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
                             {metadata?.subtopic && <span className="text-gray-600 font-medium">{metadata.subtopic}</span>}
                         </div>
 
-                        <div className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight [&_.prose]:text-inherit [&_.prose]:leading-inherit [&_.prose_p]:text-inherit [&_.prose_p]:font-bold`}>
-                            <RichText content={section.title || "ข้อสอบ"} />
+
+
+                        <div className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight [&_.prose]:text-inherit [&_.prose]:leading-inherit [&_.prose_p]:text-inherit [&_.prose_p]:font-bold flex items-start gap-3 group/title`}>
+                            <div className="flex-1">
+                                <RichText content={section.title || "ข้อสอบ"} />
+                            </div>
+                            <PinButton
+                                documentId={metadata?.id || 'unknown'}
+                                sectionId={section.id}
+                                title={section.title || "ข้อสอบ"}
+                                className="mt-1 opacity-0 group-hover/title:opacity-100 transition-opacity"
+                            />
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 gap-8">
-                {section.questions.map((q, qIndex) => (
-                    <div key={q.id || qIndex} className="break-inside-avoid flex flex-col justify-between group">
-                        {/* Question Header */}
-                        <div className={`flex gap-3 mb-3 font-medium ${sizeNumber} text-[#37352F]`}>
-                            <span className="font-bold whitespace-nowrap opacity-60">{qIndex + 1}.</span>
-                            <div className="flex-1">
-                                <div className="mb-3">
-                                    {q.difficulty && getDifficultyBadge(q.difficulty, fontSizeLevel)}
-                                    <div className={`inline leading-relaxed ${sizeText}`}>
-                                        <RichText content={q.text} />
+                {section.questions.map((q, qIndex) => {
+                    const questionId = q.id || `${section.id}-question-${qIndex}`;
+                    return (
+                        <div key={questionId} id={questionId} className="break-inside-avoid flex flex-col justify-between group/question relative">
+                            {/* Question Header */}
+                            <div className={`flex gap-3 mb-3 font-medium ${sizeNumber} text-[#37352F]`}>
+                                <div className="flex items-start gap-1">
+                                    <span className="font-bold whitespace-nowrap opacity-60">{qIndex + 1}.</span>
+                                    {/* Pin Button for Question */}
+                                    <div className="opacity-0 group-hover/question:opacity-100 transition-opacity mt-1">
+                                        <PinButton
+                                            documentId={metadata?.id || 'unknown'}
+                                            sectionId={questionId}
+                                            title={`ข้อสอบข้อที่ ${qIndex + 1}: ${(q.text || "").slice(0, 20)}...`}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="mb-3">
+                                        {q.difficulty && getDifficultyBadge(q.difficulty, fontSizeLevel)}
+                                        <div className={`inline leading-relaxed ${sizeText}`}>
+                                            <RichText content={q.text} />
+                                        </div>
+
+                                        {/* SVG Graphic Rendering */}
+                                        {q.graphic_code && (
+                                            <div className="my-4 flex justify-start">
+                                                <div
+                                                    className="bg-white p-4 rounded border border-[#E1E1E0] flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
+                                                    dangerouslySetInnerHTML={{ __html: q.graphic_code }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {/* SVG Graphic Rendering */}
-                                    {q.graphic_code && (
-                                        <div className="my-4 flex justify-start">
-                                            <div
-                                                className="bg-white p-4 rounded border border-[#E1E1E0] flex justify-center [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[400px]"
-                                                dangerouslySetInnerHTML={{ __html: q.graphic_code }}
-                                            />
+                                    {/* Options */}
+                                    <div className="space-y-2 ml-1">
+                                        {q.options && q.options.map((opt, oIndex) => {
+                                            const isCorrect = q.correctOption === oIndex;
+                                            const isString = typeof opt === 'string';
+                                            const text = isString ? opt : opt.text;
+                                            const graphicCode = !isString ? (opt as any).graphic_code : undefined;
+
+                                            return (
+                                                <div key={oIndex} className={`flex items-start gap-3 ${sizeOption} px-3 py-1.5 rounded-md transition-colors ${showAnswers && isCorrect ? 'bg-[#edf9f0]' : 'hover:bg-[#F1F1EF]'}`}>
+                                                    <div className="mt-[0.2em] shrink-0">
+                                                        {showAnswers && isCorrect ? (
+                                                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                                        ) : (
+                                                            <div className="w-4 h-4 rounded-full border border-gray-400 mt-1"></div>
+                                                        )}
+                                                    </div>
+                                                    <div className={`leading-relaxed w-full ${showAnswers && isCorrect ? 'font-medium text-[#37352F]' : 'text-[#37352F]'}`}>
+                                                        <RichText content={text} />
+                                                        {graphicCode && (
+                                                            <div className="mt-2 mb-2">
+                                                                <div
+                                                                    className="bg-white p-2 rounded border border-[#E1E1E0] flex min-w-[200px] [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[150px]"
+                                                                    dangerouslySetInnerHTML={{ __html: graphicCode }}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Explanation (Notion Callout Style) */}
+                            {q.explanation && (
+                                <div className={`mt-3 rounded-md transition-all
+                                ${showAnswers
+                                        ? 'bg-[#F1F1EF] p-4 text-[#37352F] flex gap-3'
+                                        : 'h-0 opacity-0 overflow-hidden'
+                                    }`}>
+                                    {showAnswers && (
+                                        <div className="flex flex-col gap-3 w-full">
+                                            {/* 1. Key Concept */}
+                                            {q.key_concept && (
+                                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+                                                    <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                                                        🔑 Key Concept (หลักการ)
+                                                    </div>
+                                                    <div className={`text-[#37352F] dark:text-gray-200 ${sizeText}`}>
+                                                        <RichText content={q.key_concept} inlineParagraphs={false} />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* 2. Solution/Explanation */}
+                                            <div className="flex gap-3">
+                                                <div className="shrink-0 text-xl">💡</div>
+                                                <div className={`leading-relaxed w-full ${sizeText}`}>
+                                                    <span className="font-bold mb-1 opacity-70 block text-xs uppercase tracking-wider">Solution</span>
+                                                    <RichText content={q.explanation || ''} inlineParagraphs={false} />
+                                                </div>
+                                            </div>
+
+                                            {/* 3. Common Mistakes */}
+                                            {q.common_mistakes && (
+                                                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800 mt-1">
+                                                    <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                        ⚠️ Common Mistakes (จุดที่มักผิด)
+                                                    </div>
+                                                    <div className={`text-[#37352F] dark:text-gray-200 ${sizeText}`}>
+                                                        <RichText content={q.common_mistakes} inlineParagraphs={false} />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
+                            )}
 
-                                {/* Options */}
-                                <div className="space-y-2 ml-1">
-                                    {q.options && q.options.map((opt, oIndex) => {
-                                        const isCorrect = q.correctOption === oIndex;
-                                        const isString = typeof opt === 'string';
-                                        const text = isString ? opt : opt.text;
-                                        const graphicCode = !isString ? (opt as any).graphic_code : undefined;
-
-                                        return (
-                                            <div key={oIndex} className={`flex items-start gap-3 ${sizeOption} px-3 py-1.5 rounded-md transition-colors ${showAnswers && isCorrect ? 'bg-[#edf9f0]' : 'hover:bg-[#F1F1EF]'}`}>
-                                                <div className="mt-[0.2em] shrink-0">
-                                                    {showAnswers && isCorrect ? (
-                                                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                                    ) : (
-                                                        <div className="w-4 h-4 rounded-full border border-gray-400 mt-1"></div>
-                                                    )}
-                                                </div>
-                                                <div className={`leading-relaxed w-full ${showAnswers && isCorrect ? 'font-medium text-[#37352F]' : 'text-[#37352F]'}`}>
-                                                    <RichText content={text} />
-                                                    {graphicCode && (
-                                                        <div className="mt-2 mb-2">
-                                                            <div
-                                                                className="bg-white p-2 rounded border border-[#E1E1E0] flex min-w-[200px] [&_svg]:w-full [&_svg]:h-auto [&_svg]:max-w-[400px] [&_svg]:max-h-[150px]"
-                                                                dangerouslySetInnerHTML={{ __html: graphicCode }}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                            {/* Divider */}
+                            {qIndex < section.questions.length - 1 && (
+                                <div className="h-px bg-[#E1E1E0] mt-6 w-full"></div>
+                            )}
                         </div>
-
-                        {/* Explanation (Notion Callout Style) */}
-                        {q.explanation && (
-                            <div className={`mt-3 rounded-md transition-all
-                                ${showAnswers
-                                    ? 'bg-[#F1F1EF] p-4 text-[#37352F] flex gap-3'
-                                    : 'h-0 opacity-0 overflow-hidden'
-                                }`}>
-                                {showAnswers && (
-                                    <div className="flex flex-col gap-3 w-full">
-                                        {/* 1. Key Concept */}
-                                        {q.key_concept && (
-                                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
-                                                <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
-                                                    🔑 Key Concept (หลักการ)
-                                                </div>
-                                                <div className={`text-[#37352F] dark:text-gray-200 ${sizeText}`}>
-                                                    <RichText content={q.key_concept} inlineParagraphs={false} />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* 2. Solution/Explanation */}
-                                        <div className="flex gap-3">
-                                            <div className="shrink-0 text-xl">💡</div>
-                                            <div className={`leading-relaxed w-full ${sizeText}`}>
-                                                <span className="font-bold mb-1 opacity-70 block text-xs uppercase tracking-wider">Solution</span>
-                                                <RichText content={q.explanation || ''} inlineParagraphs={false} />
-                                            </div>
-                                        </div>
-
-                                        {/* 3. Common Mistakes */}
-                                        {q.common_mistakes && (
-                                            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800 mt-1">
-                                                <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                                                    ⚠️ Common Mistakes (จุดที่มักผิด)
-                                                </div>
-                                                <div className={`text-[#37352F] dark:text-gray-200 ${sizeText}`}>
-                                                    <RichText content={q.common_mistakes} inlineParagraphs={false} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Divider */}
-                        {qIndex < section.questions.length - 1 && (
-                            <div className="h-px bg-[#E1E1E0] mt-6 w-full"></div>
-                        )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

@@ -139,12 +139,11 @@ export default function Dashboard() {
   };
 
   const handleDuplicate = async (id: string) => {
-    setIsLoading(true); // Optional optimistic loading
+    // Optimistic loading or just wait for firestore
     const result = await duplicateDocumentInFirestore(id);
     if (!result) {
       alert("เกิดข้อผิดพลาดในการทำสำเนา");
     }
-    setIsLoading(false);
   };
 
   const handleCreateNew = async () => {

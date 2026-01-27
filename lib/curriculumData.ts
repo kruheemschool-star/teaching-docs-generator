@@ -5,6 +5,14 @@ export type ClassLevel =
     | "ป.1" | "ป.2" | "ป.3" | "ป.4" | "ป.5" | "ป.6"
     | "ม.1" | "ม.2" | "ม.3" | "ม.4" | "ม.5" | "ม.6";
 
+export type Semester = "semester1" | "semester2";
+export type SubjectType = "basic" | "advanced";
+
+export interface Chapter {
+    title: string;
+    subtopics: string[];
+}
+
 export const CLASS_LEVELS: { value: ClassLevel; label: string; group: string }[] = [
     { value: "ป.1", label: "ประถมศึกษาปีที่ 1", group: "ประถมศึกษา" },
     { value: "ป.2", label: "ประถมศึกษาปีที่ 2", group: "ประถมศึกษา" },

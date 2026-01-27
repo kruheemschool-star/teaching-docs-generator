@@ -106,6 +106,21 @@ export const deleteDocument = (id: string) => {
     saveIndex(newIndex);
 };
 
+export const deleteLocalDocument = deleteDocument;
+
+export const clearAllLocalDocuments = () => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(INDEX_KEY);
+    // Also optional: iterate and remove all content- keys?
+    // For now, clearing index hides them effectively, but distinct cleanup is better.
+    // Let's just remove specific keys if possible, or clear keys starting with prefix.
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith(DOCUMENT_PREFIX) || key === INDEX_KEY) {
+            localStorage.removeItem(key);
+        }
+    });
+};
+
 // --- Folder Logic ---
 
 const FOLDER_INDEX_KEY = 'teaching-docs-folders';

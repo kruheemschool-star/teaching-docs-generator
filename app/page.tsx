@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, RefreshCw, X, Trash2, Tent, CloudUpload, ArrowUpCircle } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, RefreshCw, X, Trash2, Tent, CloudUpload, ArrowUpCircle, HardDrive } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
 import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
 import { MoveDocumentModal } from '@/components/MoveDocumentModal';
 import { ImportJsonModal } from '@/components/ImportJsonModal';
 import { BackupModal } from '@/components/BackupModal';
+import { LocalDataManager } from '@/components/LocalDataManager';
 import FirestoreDebug from '@/components/FirestoreDebug';
 
 // Local Storage Utils (Only for Migration check)
@@ -25,7 +26,8 @@ import {
   moveDocumentInFirestore,
   updateDocumentTitleInFirestore,
   duplicateDocumentInFirestore,
-  migrateToFirestore
+  migrateToFirestore,
+  updateFolderIconInFirestore
 } from '@/lib/firestoreUtils';
 
 const CLASS_LEVELS = ["ประถมศึกษา", "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"];
@@ -68,6 +70,7 @@ export default function Dashboard() {
   const [moveModal, setMoveModal] = useState<{ isOpen: boolean; docId: string | null }>({ isOpen: false, docId: null });
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isLocalManagerOpen, setIsLocalManagerOpen] = useState(false);
 
   // Bulk Selection State
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
@@ -149,13 +152,33 @@ export default function Dashboard() {
   };
 
   const handleCreateNew = async () => {
-    // Create directly in Firestore
-    const newDoc = await createDocumentInFirestore("เอกสารใหม่", "ม.1", "เทอม 1");
+    // Attempt to get a topic context
+    const defaultTopic = filterTopic !== "all" ? filterTopic : "อื่นๆ";
+
+    // Optional: Ask for Topic/Title upfront
+    // const title = prompt("ตั้งชื่อเอกสาร (หรือกด OK เพื่อใช้ชื่ออัตโนมัติ):", "เอกสารการสอน");
+    // if (title === null) return; // Cancelled
+
+    // Smart Title Generation based on context logic
+    // For now, let's just make sure the topic is passed correctly so it shows up in the UI
+    const newDoc = await createDocumentInFirestore(
+      "เอกสารใหม่", // title
+      filterClass !== "all" ? filterClass : "ม.1", // classLevel
+      filterTerm !== "all" ? filterTerm : "เทอม 1", // semester
+      defaultTopic // topic
+    );
 
     if (newDoc) {
+      // If we are in a folder, move it there
       if (currentFolderId) {
         await moveDocumentInFirestore(newDoc.documentMetadata.id, currentFolderId);
       }
+
+      // OPTIONAL: If we want to rename it immediately to the topic if it's specific?
+      // But the user said "even if we didn't name it... show the chapter name".
+      // Our updated DocumentCard calculates the badge from metadata.topic. 
+      // So ensuring 'topic' is set correctly is key.
+
       router.push(`/editor/${newDoc.documentMetadata.id}`);
     } else {
       alert("สร้างเอกสารล้มเหลว");
@@ -194,6 +217,10 @@ export default function Dashboard() {
 
   const handleFileDrop = async (docId: string, targetFolderId: string) => {
     await moveDocumentInFirestore(docId, targetFolderId);
+  };
+
+  const handleUpdateFolderIcon = async (id: string, icon: string) => {
+    await updateFolderIconInFirestore(id, icon);
   };
 
   // Filter Logic
@@ -265,15 +292,15 @@ export default function Dashboard() {
             <div className="flex flex-wrap gap-3">
 
               {/* Migration Action - Show if local docs exist */}
+              {/* Migration / Local Data Action */}
               {localDocCount > 0 && (
                 <button
-                  onClick={handleMigrate}
-                  disabled={isSyncing}
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition shadow-lg shadow-indigo-500/30 flex items-center gap-2 text-sm animate-pulse"
-                  title="ย้ายข้อมูลจากเครื่องขึ้น Cloud"
+                  onClick={() => setIsLocalManagerOpen(true)}
+                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-bold transition shadow-sm flex items-center gap-2 text-sm animate-pulse"
+                  title="จัดการไฟล์ที่ค้างในเครื่อง"
                 >
-                  {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}
-                  <span className="hidden sm:inline">Migrate Local Data ({localDocCount})</span>
+                  <HardDrive className="w-4 h-4" />
+                  <span className="hidden sm:inline">Offline Files ({localDocCount})</span>
                 </button>
               )}
 
@@ -341,6 +368,15 @@ export default function Dashboard() {
           </div>
         )}
 
+        <LocalDataManager
+          isOpen={isLocalManagerOpen}
+          onClose={() => setIsLocalManagerOpen(false)}
+          onDataChanged={() => {
+            const local = getLocalDocuments();
+            setLocalDocCount(local.length);
+          }}
+        />
+
         {/* --- Folders Section (Only at Root) --- */}
         {!currentFolderId && folders.length > 0 && !searchQuery && (
           <div className="mb-10">
@@ -356,6 +392,7 @@ export default function Dashboard() {
                   onDelete={handleDeleteFolder}
                   onRename={handleRenameFolder}
                   onDropDocument={(docId) => handleFileDrop(docId, folder.id)}
+                  onIconChange={handleUpdateFolderIcon}
                 />
               ))}
             </div>

@@ -124,8 +124,8 @@ export const MetadataModal: React.FC<MetadataModalProps> = ({
                                     key={topic}
                                     onClick={() => setFormData({ ...formData, topic })}
                                     className={`px-3 py-2 rounded-lg text-sm font-medium transition border flex items-center justify-center gap-2 ${formData.topic === topic
-                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500'
-                                            : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-700'
+                                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500'
+                                        : 'bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-700'
                                         }`}
                                 >
                                     {/* Optional: Add dot color indicator if needed, but the active state style is enough */}

@@ -54,9 +54,7 @@ const CONTENT_TYPES = [
 const QUESTION_STYLES = [
     { value: "onets", label: "O-NET", description: "เน้นวิเคราะห์ เชื่อมโยงความรู้พื้นฐาน" },
     { value: "pat1", label: "PAT 1", description: "คณิตศาสตร์ขั้นสูง ซับซ้อน ท้าทาย" },
-    { value: "sat", label: "SAT Math", description: "ภาษาอังกฤษ เน้น Speed & Logic" },
     { value: "posn", label: "สอวน.", description: "โอลิมปิกวิชาการ วิเคราะห์เชิงลึก" },
-    { value: "cloze", label: "Cloze Test", description: "ทดสอบคำศัพท์และไวยากรณ์ในบริบท" },
     { value: "blanks", label: "Fill Blanks", description: "เติมคำตอบสั้นๆ ตรวจสอบความแม่นยำ" },
     { value: "skill", label: "แบบฝึกทักษะ (Skill)", description: "เน้นฝึกซ้ำๆ ให้แม่นยำ (Drill & Practice)" }
 ];

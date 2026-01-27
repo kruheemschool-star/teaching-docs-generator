@@ -4,6 +4,7 @@ export interface Folder {
     id: string;
     name: string;
     createdAt: string;
+    icon?: string; // New: Emoji icon
 }
 
 export interface DocumentMetadata {
@@ -19,6 +20,7 @@ export interface DocumentMetadata {
     updatedAt: string; // ISO timestamp for sorting
     headerImage?: string; // Optional URL for a logo/header
     topic?: string; // e.g., "พีชคณิต", "เรขาคณิต"
+    icon?: string; // New: Emoji icon
 }
 
 export interface BaseSection {

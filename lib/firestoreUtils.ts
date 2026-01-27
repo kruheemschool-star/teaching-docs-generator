@@ -3,6 +3,7 @@ import {
     collection,
     doc,
     setDoc,
+    updateDoc,
     deleteDoc,
     getDocs,
     getDoc,
@@ -254,5 +255,23 @@ export const duplicateDocumentInFirestore = async (docId: string): Promise<Cours
     } catch (error) {
         console.error("Error duplicating document:", error);
         return null;
+    }
+};
+export const updateFolderIconInFirestore = async (id: string, icon: string) => {
+    try {
+        const ref = doc(db, COLLECTION_FOLDERS, id);
+        await updateDoc(ref, { icon });
+    } catch (error) {
+        console.error("Error updating folder icon:", error);
+    }
+};
+
+export const updateDocumentIconInFirestore = async (id: string, icon: string) => {
+    try {
+        const ref = doc(db, COLLECTION_DOCS, id);
+        // Document persistence structure is nested in documentMetadata
+        await updateDoc(ref, { "documentMetadata.icon": icon });
+    } catch (error) {
+        console.error("Error updating document icon:", error);
     }
 };

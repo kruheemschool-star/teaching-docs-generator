@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans_Thai, Sarabun, Mali, Chakra_Petch, Niramit, Charm } from "next/font/google";
+import { IBM_Plex_Sans_Thai, Sarabun, Mali, Chakra_Petch, Niramit, Charm, Kanit } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -44,6 +44,12 @@ const charm = Charm({
   variable: '--font-charm',
 });
 
+const kanit = Kanit({
+  weight: ['200', '300', '400', '500', '600'],
+  subsets: ["thai", "latin"],
+  variable: '--font-kanit',
+});
+
 export const metadata: Metadata = {
   title: "Teaching Docs Generator",
   description: "Generate A4 teaching documents from JSON",
@@ -56,7 +62,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body className={`${ibmPlexSansThai.variable} ${sarabun.variable} ${mali.variable} ${chakraPetch.variable} ${niramit.variable} ${charm.variable} font-sans antialiased`}>
+      <body className={`${ibmPlexSansThai.variable} ${sarabun.variable} ${kanit.variable} ${mali.variable} ${chakraPetch.variable} ${niramit.variable} ${charm.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

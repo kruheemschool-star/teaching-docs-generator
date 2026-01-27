@@ -6,8 +6,8 @@
   --foreground: #333333;
   /* Minimalist Dark Gray, not Black */
   --paper: #ffffff;
-  --font-family-base: var(--font-ibm-plex-thai);
-  /* Switched default font */
+  /* Project Minimalist: Font Switched to Sarabun for readability */
+  --font-family-base: var(--font-sarabun);
 
   --border-subtle: #e5e5e5;
   --bg-subtle: #fafafa;
@@ -21,41 +21,42 @@
   --primary: #18181b;
   --primary-foreground: #fafafa;
 
-  --secondary: #fafafa;
+  --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
 
-  --muted: #fafafa;
-  --muted-foreground: #666666;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
   /* Medium Gray for body text */
 
-  --accent: #fafafa;
+  --accent: #f4f4f5;
   --accent-foreground: #18181b;
 
   --destructive: #ef4444;
   --destructive-foreground: #fafafa;
 
-  --border: #e5e5e5;
+  --border: #e4e4e7;
   /* Subtle border 1px */
-  --input: #e5e5e5;
-  --ring: #e5e5e5;
+  --input: #e4e4e7;
+  --ring: #a1a1aa;
   /* Subtle ring */
 
   --radius: 0.5rem;
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --paper: #ffffff;
-  /* Paper remains white in "document view" usually, but can adapt */
+  /* Minimalist Dark Mode: Deep Charcoal (#121212) - No Pure Black */
+  --background: #121212;
+  --foreground: #e4e4e7;
+  --paper: #1e1e1e;
+  /* Slightly lighter paper for contrast in dark mode */
 
   --border-subtle: #27272a;
   --bg-subtle: #18181b;
 
-  --card: #09090b;
-  --card-foreground: #fafafa;
-  --popover: #09090b;
-  --popover-foreground: #fafafa;
+  --card: #18181b;
+  --card-foreground: #e4e4e7;
+  --popover: #18181b;
+  --popover-foreground: #e4e4e7;
 
   --primary: #fafafa;
   --primary-foreground: #18181b;
@@ -74,14 +75,14 @@
 
   --border: #27272a;
   --input: #27272a;
-  --ring: #d4d4d8;
+  --ring: #52525b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-paper: var(--paper);
-  --font-sans: var(--font-ibm-plex-thai);
+  --font-sans: var(--font-sarabun);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -89,8 +90,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-family-base), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.65;
+  /* Increased line height for readability */
+  letter-spacing: 0.015em;
+  /* Slight spacing */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+  /* Smooth Theme Transition */
 }
 
 /* Base styles for Markdown content */

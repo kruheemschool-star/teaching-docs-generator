@@ -1,37 +1,42 @@
-"use client";
-
 import { Folder } from "@/types";
-import { Folder as FolderIcon, MoreVertical, Trash2, Edit2 } from "lucide-react";
+import { MoreVertical, Trash2, Edit2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 
 interface FolderCardProps {
     folder: Folder;
     onClick: () => void;
     onDelete: (id: string) => void;
     onRename: (id: string, currentName: string) => void;
+    onIconChange?: (id: string, icon: string) => void;
     onDropDocument?: (docId: string) => void;
 }
 
-export const FolderCard = ({ folder, onClick, onDelete, onRename, onDropDocument }: FolderCardProps) => {
+export const FolderCard = ({ folder, onClick, onDelete, onRename, onIconChange, onDropDocument }: FolderCardProps) => {
     const [showMenu, setShowMenu] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const pickerRef = useRef<HTMLDivElement>(null);
 
-    // Close menu when clicking outside
+    // Close menu/picker when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setShowMenu(false);
             }
+            if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
         };
 
-        if (showMenu) {
+        if (showMenu || showEmojiPicker) {
             document.addEventListener("mousedown", handleClickOutside);
         }
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [showMenu]);
+    }, [showMenu, showEmojiPicker]);
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -47,6 +52,20 @@ export const FolderCard = ({ folder, onClick, onDelete, onRename, onDropDocument
         e.preventDefault();
         onRename(folder.id, folder.name);
         setShowMenu(false);
+    };
+
+    const handleIconClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        setShowEmojiPicker(!showEmojiPicker);
+    };
+
+    const onEmojiClick = (emojiData: EmojiClickData, event: MouseEvent) => {
+        // event.stopPropagation();
+        if (onIconChange) {
+            onIconChange(folder.id, emojiData.emoji);
+        }
+        setShowEmojiPicker(false);
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -66,10 +85,11 @@ export const FolderCard = ({ folder, onClick, onDelete, onRename, onDropDocument
         setIsDragOver(false);
         const docId = e.dataTransfer.getData("docId");
         if (docId && onDropDocument) {
-            // Prevent dropping into itself if we were dragging folders (not yet, but good practice)
             onDropDocument(docId);
         }
     };
+
+    const displayIcon = folder.icon || "📁";
 
     return (
         <div
@@ -80,12 +100,30 @@ export const FolderCard = ({ folder, onClick, onDelete, onRename, onDropDocument
             className={`group relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 transition-all hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer flex items-center gap-4 ${isDragOver ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/30 scale-105 shadow-xl' : ''}`}
         >
             {/* Icon */}
-            <div className="w-10 h-10 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg flex items-center justify-center shrink-0">
-                <FolderIcon className="w-5 h-5 fill-current" />
+            <div className="relative" ref={pickerRef}>
+                <div
+                    onClick={handleIconClick}
+                    className="w-10 h-10 bg-gray-50 dark:bg-zinc-800 text-2xl rounded-lg flex items-center justify-center shrink-0 hover:scale-110 transition-transform cursor-pointer shadow-sm border border-gray-100 dark:border-zinc-700"
+                >
+                    {displayIcon}
+                </div>
+                {/* Emoji Picker Popover */}
+                {showEmojiPicker && (
+                    <div className="absolute top-full left-0 mt-2 z-50 shadow-2xl rounded-xl animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
+                        <EmojiPicker
+                            onEmojiClick={onEmojiClick}
+                            theme={Theme.AUTO}
+                            width={300}
+                            height={350}
+                            searchDisabled={false}
+                            previewConfig={{ showPreview: false }}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Name */}
-            <h3 title={folder.name} className="font-semibold text-base text-gray-900 dark:text-gray-100 truncate flex-1 leading-tight">
+            <h3 title={folder.name} className="font-semibold text-base text-gray-900 dark:text-gray-100 truncate flex-1 leading-tight font-sarabun">
                 {folder.name}
             </h3>
 
@@ -107,14 +145,14 @@ export const FolderCard = ({ folder, onClick, onDelete, onRename, onDropDocument
                     <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-gray-100 dark:border-zinc-800 z-20 overflow-hidden py-1 animate-in fade-in zoom-in duration-200">
                         <button
                             onClick={handleRename}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800 flex items-center gap-2 font-sarabun"
                         >
                             <Edit2 className="w-4 h-4" />
                             เปลี่ยนชื่อ
                         </button>
                         <button
                             onClick={handleDelete}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 font-sarabun"
                         >
                             <Trash2 className="w-4 h-4" />
                             ลบโฟลเดอร์

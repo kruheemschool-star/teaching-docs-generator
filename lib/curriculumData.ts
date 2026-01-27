@@ -3,16 +3,7 @@
 
 export type ClassLevel =
     | "ป.1" | "ป.2" | "ป.3" | "ป.4" | "ป.5" | "ป.6"
-    | "ม.1" | "ม.2" | "ม.3" | "ม.4" | "ม.5" | "ม.6"
-    | "ปวช." | "ปวส." | "มหาวิทยาลัย";
-
-export type Semester = "semester1" | "semester2";
-export type SubjectType = "basic" | "advanced";
-
-export interface Chapter {
-    title: string;
-    subtopics: string[];
-}
+    | "ม.1" | "ม.2" | "ม.3" | "ม.4" | "ม.5" | "ม.6";
 
 export const CLASS_LEVELS: { value: ClassLevel; label: string; group: string }[] = [
     { value: "ป.1", label: "ประถมศึกษาปีที่ 1", group: "ประถมศึกษา" },
@@ -27,8 +18,6 @@ export const CLASS_LEVELS: { value: ClassLevel; label: string; group: string }[]
     { value: "ม.4", label: "มัธยมศึกษาปีที่ 4", group: "มัธยมศึกษา" },
     { value: "ม.5", label: "มัธยมศึกษาปีที่ 5", group: "มัธยมศึกษา" },
     { value: "ม.6", label: "มัธยมศึกษาปีที่ 6", group: "มัธยมศึกษา" },
-    { value: "ปวช.", label: "ประกาศนียบัตรวิชาชีพ (ปวช.)", group: "อาชีวศึกษา" },
-    { value: "ปวส.", label: "ประกาศนียบัตรวิชาชีพ (ปวส.)", group: "อาชีวศึกษา" },
 ];
 
 export const SEMESTERS: { value: Semester; label: string }[] = [
@@ -125,7 +114,25 @@ const MATH_BASIC: CurriculumMap["Subject"] = {
             { title: "ฟังก์ชัน", subtopics: ["ความสัมพันธ์และฟังก์ชัน", "โดเมน เรนจ์", "ฟังก์ชันเชิงเส้น/กำลังสอง"] }
         ]
     },
-    // ... M.5, M.6 Basic ...
+    "ม.5": {
+        semester1: [
+            { title: "เลขยกกำลัง", subtopics: ["รากที่ n ของจำนวนจริง", "เลขยกกำลังที่มีเลขชี้กำลังเป็นจำนวนตรรกยะ"] },
+            { title: "ฟังก์ชัน", subtopics: ["ฟังก์ชันและกราฟ", "ฟังก์ชันเชิงเส้น", "ฟังก์ชันกำลังสอง", "ฟังก์ชันขั้นบันได", "ฟังก์ชันเอกซ์โพเนนเชียล"] }
+        ],
+        semester2: [
+            { title: "ลำดับและอนุกรม", subtopics: ["ลำดับเลขคณิต", "ลำดับเรขาคณิต", "อนุกรมเลขคณิต", "อนุกรมเรขาคณิต"] },
+            { title: "ดอกเบี้ยและมูลค่าของเงิน", subtopics: ["ดอกเบี้ยคงต้น", "ดอกเบี้ยทบต้น", "มูลค่าปัจจุบันและมูลค่าอนาคต", "ค่างวด"] }
+        ]
+    },
+    "ม.6": {
+        semester1: [
+            { title: "ความหมายของสถิติศาสตร์และข้อมูล", subtopics: ["สถิติศาสตร์", "คำถามทางสถิติ", "การเก็บรวบรวมข้อมูล"] },
+            { title: "การวิเคราะห์และนำเสนอข้อมูลเชิงคุณภาพ", subtopics: ["ตารางความถี่", "แผนภูมิรูปภาพ", "แผนภูมิวงกลม"] }
+        ],
+        semester2: [
+            { title: "การวิเคราะห์และนำเสนอข้อมูลเชิงปริมาณ", subtopics: ["ฮิสโทแกรม", "แผนภาพจุด", "แผนภาพกล่อง", "ค่ากลางของข้อมูล", "ค่าวัดการกระจาย", "ค่าวัดตำแหน่งที่"] }
+        ]
+    }
 };
 
 const MATH_ADVANCED: CurriculumMap["Subject"] = {

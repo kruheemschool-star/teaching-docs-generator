@@ -13,7 +13,12 @@ const firebaseConfig = {
 
 // Initialize Firebase (Singleton pattern)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+
+// Use initializeFirestore to force long polling, which resolves "hanging" connections on some networks/Vercel
+import { initializeFirestore } from "firebase/firestore";
+const db = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+});
 // const auth = getAuth(app);
 
 export { db };

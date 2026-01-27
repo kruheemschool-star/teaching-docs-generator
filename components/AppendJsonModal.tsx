@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, FileJson, Check, PlusCircle, AlertCircle } from 'lucide-react';
+import { X, FileJson, Check, PlusCircle, AlertCircle, Clipboard } from 'lucide-react';
 import { Section } from '@/types';
 import { SmartJsonEditor } from './SmartJsonEditor';
 import { smartAdaptJson } from '@/lib/smartAdapter';
@@ -120,6 +120,24 @@ export const AppendJsonModal = ({ isOpen, onClose, onAppend }: AppendJsonModalPr
                                 ระบบจะนำไป <b>ต่อท้าย</b> เนื้อหาเดิมที่มีอยู่ทันที
                             </span>
                         </p>
+                    </div>
+
+                    <div className="flex justify-end mb-2">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const text = await navigator.clipboard.readText();
+                                    setJsonContent(text);
+                                } catch (err) {
+                                    console.error('Failed to read clipboard', err);
+                                    alert('ไม่สามารถอ่าน Clipboard ได้ กรุณากดวาง (Ctrl+V) ปกติ');
+                                }
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center gap-2 transition-colors border border-gray-200"
+                        >
+                            <Clipboard className="w-3.5 h-3.5" />
+                            วางโค้ด (Paste)
+                        </button>
                     </div>
 
                     <div className="h-80 mb-4">

@@ -5,13 +5,20 @@ import {
     BookOpen, FileText, GraduationCap, Video, Youtube,
     Layout, Type, List, CheckSquare, Shapes, Calculator,
     ArrowLeft, Sparkles, AlertCircle, HelpCircle,
-    Check, Copy, Terminal, RotateCcw, X
+    Check, Copy, Terminal, RotateCcw, X, ExternalLink,
+    Paperclip, Layers, Globe
 } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Constants & Data ---
 
 import { getTopics, SEMESTERS, Semester, Chapter, ClassLevel } from '@/lib/curriculumData';
+
+const SOURCE_MODES = [
+    { value: 'free', label: 'อิสระ (AI Free)', icon: Sparkles, desc: 'ให้ AI ค้นหาและสร้างเนื้อหาเองจากฐานข้อมูล' },
+    { value: 'attachment', label: 'เอกสารแนบ (Attachment)', icon: Paperclip, desc: 'อ้างอิงจากไฟล์ที่แนบไปให้เท่านั้น (Strict)' },
+    { value: 'mixed', label: 'ผสมผสาน (Hybrid)', icon: Layers, desc: 'อ้างอิงจากเอกสาร + ค้นหาเพิ่มเติม' }
+];
 
 const SUBJECTS = [
     "คณิตศาสตร์", "วิทยาศาสตร์", "ภาษาไทย", "ภาษาอังกฤษ", "สังคมศึกษา", "ประวัติศาสตร์", "สุขศึกษา", "คอมพิวเตอร์"
@@ -26,10 +33,10 @@ const GRADES = [
 // Content Types with Icons
 const CONTENT_TYPES = [
     {
-        id: "exam",
-        label: "ออกข้อสอบ",
-        icon: GraduationCap,
-        desc: "สร้างชุดข้อสอบ ตัวเลือก พร้อมเฉลยละเอียด"
+        id: "lesson",
+        label: "เนื้อหาบทเรียน",
+        icon: BookOpen,
+        desc: "สรุปเนื้อหาสำคัญ อธิบายตามหัวข้อ"
     },
     {
         id: "exercise",
@@ -38,16 +45,22 @@ const CONTENT_TYPES = [
         desc: "โจทย์ปัญหา เน้นการฝึกฝนและวิธีทำ"
     },
     {
-        id: "lesson",
-        label: "เนื้อหาบทเรียน",
-        icon: BookOpen,
-        desc: "สรุปเนื้อหาสำคัญ อธิบายตามหัวข้อ"
+        id: "exam",
+        label: "ออกข้อสอบ",
+        icon: GraduationCap,
+        desc: "สร้างชุดข้อสอบ ตัวเลือก พร้อมเฉลยละเอียด"
     },
     {
         id: "video-summary",
         label: "สรุปจากวิดีโอ",
         icon: Video,
         desc: "สรุปประเด็นสำคัญจาก Transcript หรือ YouTube"
+    },
+    {
+        id: "content-summary",
+        label: "สรุปเนื้อหา",
+        icon: FileText,
+        desc: "สรุปเนื้อหาจากหัวข้อที่ระบุ (Short/Bullet)"
     }
 ];
 
@@ -84,11 +97,16 @@ const SUMMARY_TONES = [
     { value: "bullet", label: "Bullet Points", description: "สรุปเป็นข้อย่อยๆ อ่านง่าย สบายตา" },
 ];
 
+const CONTENT_SUMMARY_STYLES = [
+    { value: "short_text", label: "ข้อความสั้น (Short Text)", description: "สรุปใจความสำคัญเป็นย่อหน้าสั้นๆ" },
+    { value: "bullet_point", label: "Bullet Points", description: "สรุปเป็นรายการข้อย่อย" }
+];
+
 const CONTENT_LENGTHS = [
     { value: "short", label: "สั้น (Short)", description: "กระชับ 200-300 คำ" },
     { value: "medium", label: "ปานกลาง (Medium)", description: "ปกติ 500-800 คำ" },
     { value: "long", label: "ยาว (Long)", description: "ละเอียด 1000+ คำ" },
-    { value: "detailed", label: "ละเอียดมาก (Detailed)", description: "เจาะลึกทุกแง่มุม ยกตัวอย่างเยอะ" }
+    { value: "detailed", label: "ละเอียดมาก (Detailed)", description: "เจาะลึกทุกแง่มุม (2000+ คำ)" }
 ];
 
 const CONTENT_ELEMENTS = [
@@ -109,11 +127,11 @@ const INPUT_SOURCES = [
 
 const QUICK_TEMPLATES = [
     {
-        id: "lesson_summary",
-        label: "สรุปบทเรียน",
+        id: "lesson_content",
+        label: "เนื้อหาบทเรียน",
         icon: FileText,
-        topic: "[ระบุเรื่องที่ต้องการสรุป]",
-        desc: "สร้างเอกสารสรุปเนื้อหาสำหรับทบทวน"
+        topic: "[ระบุเรื่องที่ต้องการสร้างเนื้อหา]",
+        desc: "สร้างเอกสารเนื้อหาบทเรียนอย่างละเอียด"
     },
     {
         id: "exam_generator",
@@ -121,13 +139,6 @@ const QUICK_TEMPLATES = [
         icon: GraduationCap,
         topic: "[ระบุวิชา/เรื่องที่ต้องการสอบ]",
         desc: "สร้างชุดข้อสอบวัดผลพร้อมเฉลย"
-    },
-    {
-        id: "teaching_plan",
-        label: "แผนการสอน",
-        icon: BookOpen,
-        topic: "[ระบุหัวข้อแผนการสอน]",
-        desc: "ร่างแผนการจัดการเรียนรู้รายชั่วโมง"
     }
 ];
 
@@ -196,6 +207,7 @@ export default function PromptBuilder() {
     // Video Summary specific
     const [summaryTone, setSummaryTone] = useState("bullet");
     const [inputSource, setInputSource] = useState("topic");
+    const [sourceMode, setSourceMode] = useState("free"); // New Source Mode State
     const [youtubeUrl, setYoutubeUrl] = useState("");
     const [transcript, setTranscript] = useState("");
 
@@ -209,10 +221,13 @@ export default function PromptBuilder() {
 
     // --- Safety Logic ---
     useEffect(() => {
-        if (contentType === "lesson" || contentType === "video-summary") {
+        if (contentType === "lesson" || contentType === "video-summary" || contentType === "content-summary") {
             setDifficulty("medium");
             setItemCount(5);
             setQuestionStyle("onets");
+        }
+        if (contentType === "content-summary") {
+            setSummaryTone("short_text"); // Default for content-summary
         }
         if (contentType !== "video-summary" && inputSource !== "topic") {
             setInputSource("topic");
@@ -220,6 +235,7 @@ export default function PromptBuilder() {
     }, [contentType]);
 
     // --- Helper Functions ---
+    // ... (keep existing helper functions) ...
     const getTopicForPrompt = () => {
         if (showStructuredInput && selectedChapter) {
             let topicStr = selectedChapter === "custom" ? customTopic : selectedChapter;
@@ -239,7 +255,7 @@ export default function PromptBuilder() {
     const getDisplayGradeLevel = () => gradeLevel;
 
     const handleUseTemplate = (templateTopic: string) => {
-        setSubject("");
+        setSubject("คณิตศาสตร์");
         setCustomTopic(templateTopic);
         setHighlightTopic(true);
     };
@@ -262,25 +278,26 @@ export default function PromptBuilder() {
             setInputSource("topic");
             setYoutubeUrl("");
             setTranscript("");
+            setSourceMode("free");
         }
     };
 
     // Validation Check
     const isFormValid = useMemo(() => {
-        if (inputSource === 'topic') {
-            if (showStructuredInput) {
-                if (!selectedChapter) return false;
-                if (selectedChapter === "custom") return customTopic.trim().length > 0;
-                // If subtopic is custom, check it too
-                if (selectedSubTopic === "custom") return customSubTopic.trim().length > 0;
-                return true;
-            }
-            return customTopic.trim().length > 0;
+        if (contentType === "video-summary") {
+            if (inputSource === 'youtube') return youtubeUrl.trim().length > 0;
+            if (inputSource === 'transcript') return transcript.trim().length > 0;
+            return false;
         }
-        if (inputSource === 'youtube') return youtubeUrl.trim().length > 0;
-        if (inputSource === 'transcript') return transcript.trim().length > 0;
-        return false;
-    }, [inputSource, customTopic, youtubeUrl, transcript]);
+        // General text inputs
+        if (showStructuredInput) {
+            if (!selectedChapter) return false;
+            if (selectedChapter === "custom") return customTopic.trim().length > 0;
+            if (selectedSubTopic === "custom") return customSubTopic.trim().length > 0;
+            return true;
+        }
+        return customTopic.trim().length > 0;
+    }, [inputSource, customTopic, youtubeUrl, transcript, contentType, showStructuredInput, selectedChapter, selectedSubTopic, customSubTopic]);
 
 
     useEffect(() => {
@@ -309,6 +326,7 @@ export default function PromptBuilder() {
         customTopic,
         customSubTopic,
         inputSource,
+        sourceMode, // Dependency Added
         youtubeUrl,
         transcript,
         questionType,
@@ -334,10 +352,23 @@ export default function PromptBuilder() {
         const subTopicText = subTopic ? `\nหัวข้อย่อย: ${subTopic}` : "";
         const additionalText = additionalInstructions ? `\nคำสั่งเพิ่มเติม: ${additionalInstructions}` : "";
 
+        // Source Instruction Logic
+        let sourceInstruction = "";
+        if (contentType !== "video-summary") {
+            if (sourceMode === "free") {
+                sourceInstruction = "แหล่งข้อมูล: ค้นหาข้อมูลและสร้างเนื้อหาอย่างอิสระจากฐานข้อมูลความรู้ของ AI (AI Knowledge Base)";
+            } else if (sourceMode === "attachment") {
+                sourceInstruction = "แหล่งข้อมูลสำคัญ: **อ้างอิงเนื้อหาจากเอกสาร/ภาพที่แนบไปนี้เท่านั้น** ห้ามแต่งเติมข้อมูลนอกเหนือจากที่ปรากฏในเอกสาร (Strict Context)";
+            } else if (sourceMode === "mixed") {
+                sourceInstruction = "แหล่งข้อมูล: อ้างอิงจากเอกสารที่แนบเป็นหลัก และผสมผสานกับการค้นหาข้อมูลเพิ่มเติมเพื่อให้เนื้อหาสมบูรณ์ยิ่งขึ้น (Hybrid Approach)";
+            }
+        }
+
         let dynamicInputs = `จงสร้างเนื้อหาตามรายละเอียดดังต่อไปนี้:
-ประเภทเนื้อหา: ${contentType === "exam" ? "ข้อสอบ (Exam)" : contentType === "exercise" ? "แบบฝึกหัด (Exercise)" : contentType === "lesson" ? "เนื้อหา (Lesson)" : contentType === "video-summary" ? "สรุปจากวิดีโอ (Video Summary)" : "เนื้อหา"}
+ประเภทเนื้อหา: ${contentType === "exam" ? "ข้อสอบ (Exam)" : contentType === "exercise" ? "แบบฝึกหัด (Exercise)" : contentType === "lesson" ? "เนื้อหาบทเรียน (Lesson)" : contentType === "video-summary" ? "สรุปจากวิดีโอ (Video Summary)" : "สรุปเนื้อหา (Content Summary)"}
 ระดับชั้น: ${gradeText}
-หัวข้อเรื่อง: ${topicText}${subTopicText}`;
+หัวข้อเรื่อง: ${topicText}${subTopicText}
+${sourceInstruction}`;
 
         // Add optional inputs based on content type
         if (contentType === "exam" || contentType === "exercise") {
@@ -369,6 +400,10 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
             if (inputSource === "transcript" && transcript) {
                 dynamicInputs += `\nTranscript:\n"${transcript}"`;
             }
+        } else if (contentType === "content-summary") {
+            dynamicInputs += `
+            รูปแบบการสรุป: ${CONTENT_SUMMARY_STYLES.find(t => t.value === summaryTone)?.label || summaryTone}
+            ${summaryTone === 'short_text' ? '(เน้นเขียนเป็นความเรียงย่อหน้าสั้นๆ กระชับ ได้ใจความ)' : '(เน้นย่อยเป็นข้อๆ Bullet points เพื่อให้อ่านง่าย)'}`;
         }
 
         dynamicInputs += additionalText;
@@ -389,18 +424,22 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
       "question_text": "โจทย์คำถาม...",
       "choices": ["ก. ...", "ข. ...", "ค. ...", "ง. ..."],
       "correct_answer": "ระบุตัวเลือกที่ถูก",
-      "key_concept": "ระบุหลักการสำคัญของข้อนี้ (Concept)",
+      "key_concept": "ต้องระบุหลักการสำคัญของข้อนี้เสมอ (ห้ามปล่อยว่าง)",
       "step_by_step_solution": [
         "ขั้นที่ 1: ...",
         "ขั้นที่ 2: ..."
       ],
-      "common_mistakes": "ระบุจุดที่นักเรียนมักพลาดบ่อยๆ ในข้อนี้"${isGeometry ? ',\n      "graphic_code": "<svg>...</svg>"' : ''}
+      "common_mistakes": "ต้องระบุจุดที่นักเรียนมักพลาดบ่อยๆ (ห้ามปล่อยว่าง)"${isGeometry ? ',\n      "graphic_code": "<svg>...</svg>"' : ''}
     }
   ]
 }`;
-            specificInstructions = "เฉลยละเอียด (Important): ให้ระบุ 3 ส่วนประกอบเสมอ: 1. หลักการสำคัญ (Key Concept) 2. วิธีทำเป็นขั้นตอน (Step-by-step) 3. จุดที่มักผิด (Common Mistakes)";
+            specificInstructions = `คำสั่งกำกับพิเศษ (Strict Requirements):
+1. **Key Concept (หลักการ)**: ต้องมีทุกข้อ ห้ามตัดออก อธิบายสั้นๆ ว่าข้อนี้วัดเรื่องอะไร
+2. **Common Mistakes (จุดที่มักผิด)**: ต้องมีทุกข้อ ห้ามตัดออก เพื่อเตือนจุดอันตราย
+3. **Step-by-step**: แสดงวิธีทำละเอียด ห้ามข้ามขั้นตอน
+4. **ห้ามเปลี่ยนชื่อ Key** ใน JSON (ใช้ key_concept, common_mistakes เท่านั้น)`;
             if (isGeometry) {
-                specificInstructions += "\nกรณีเป็นเรขาคณิต: ต้องสร้างโค้ด SVG ที่สมบูรณ์ใส่ในฟิลด์ graphic_code";
+                specificInstructions += "\n5. กรณีเป็นเรขาคณิต: ต้องสร้างโค้ด SVG ที่สมบูรณ์ใส่ในฟิลด์ graphic_code";
             }
         } else if (contentType === "lesson" || contentType === "lecture") {
             schemaDefinition = `{
@@ -431,6 +470,15 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
   "common_mistakes": ["สิ่งที่มักเข้าใจผิด 1", "สิ่งที่มักเข้าใจผิด 2"],
   "timestamps": [
     { "time": "00:00", "topic": "หัวข้อช่วงเวลา" }
+  ]
+}`;
+        } else if (contentType === "content-summary") {
+            schemaDefinition = `{
+  "content_type": "summary",
+  "title": "${topicText}",
+  "key_takeaways": [
+    "${summaryTone === 'bullet_point' ? 'ประเด็นสำคัญข้อที่ 1' : 'เนื้อหาสรุป (Para 1)'}",
+    "${summaryTone === 'bullet_point' ? 'ประเด็นสำคัญข้อที่ 2' : 'เนื้อหาสรุป (Para 2)'}"
   ]
 }`;
         }
@@ -552,10 +600,10 @@ ${specificInstructions}
                                     </div>
                                 </div>
 
-                                {/* Audience & Topic */}
+                                {/* Audience (Level & Semester & Subject) */}
                                 <div className="space-y-4">
                                     <div className="flex gap-4">
-                                        <div className="w-1/3">
+                                        <div className={contentType === "video-summary" ? "hidden" : "w-1/3"}>
                                             <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">ระดับชั้น</label>
                                             <div className="relative">
                                                 <select
@@ -571,8 +619,7 @@ ${specificInstructions}
                                             </div>
                                         </div>
 
-                                        {/* Semester Selector (New) */}
-                                        <div className="w-1/3">
+                                        <div className={contentType === "video-summary" ? "hidden" : "w-1/3"}>
                                             <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">ภาคเรียน</label>
                                             <div className="relative">
                                                 <select
@@ -588,233 +635,176 @@ ${specificInstructions}
                                             </div>
                                         </div>
 
-                                        <div className="w-1/3">
-                                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">
-                                                {contentType === "video-summary" ? "แหล่งข้อมูล" : "วิชา"}
-                                            </label>
-                                            {contentType === "video-summary" ? (
-                                                <div className="flex bg-gray-100 p-1 rounded-lg">
-                                                    {INPUT_SOURCES.map(source => (
-                                                        <button
-                                                            key={source.id}
-                                                            onClick={() => setInputSource(source.id as any)}
-                                                            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1.5 ${inputSource === source.id
-                                                                ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
-                                                                : "text-gray-500 hover:text-gray-700"
-                                                                }`}
-                                                        >
-                                                            <source.icon className="w-3 h-3" />
-                                                            {source.label}
-                                                        </button>
-                                                    ))}
+                                        <div className={contentType === "video-summary" ? "hidden" : "w-1/3"}>
+                                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">วิชา</label>
+                                            <div className="relative">
+                                                <select
+                                                    className="w-full pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none appearance-none cursor-pointer hover:border-gray-400 transition-colors"
+                                                    value={subject}
+                                                    onChange={(e) => setSubject(e.target.value)}
+                                                >
+                                                    <option value="">(ไม่ระบุวิชา)</option>
+                                                    {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                                                 </div>
-                                            ) : (
-                                                <div className="relative">
-                                                    <select
-                                                        className="w-full pl-3 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none appearance-none cursor-pointer hover:border-gray-400 transition-colors"
-                                                        value={subject}
-                                                        onChange={(e) => setSubject(e.target.value)}
-                                                    >
-                                                        <option value="">(ไม่ระบุวิชา)</option>
-                                                        {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                                                    </select>
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                    </div>
-                                                </div>
-                                            )}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Subject Type Selector for Secondary Math */}
-                                    {subject === "คณิตศาสตร์" && (["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6", "ปวช.", "ปวส."].includes(gradeLevel)) && (
+                                    {/* Subject Type Selector */}
+                                    {subject === "คณิตศาสตร์" && (["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6", "ปวช.", "ปวส."].includes(gradeLevel)) && contentType !== "video-summary" && (
                                         <div className="mt-4 animate-in fade-in zoom-in duration-300">
                                             <div className="flex gap-4 items-center">
                                                 <div className="w-1/3">
                                                     <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">ประเภทวิชา</label>
                                                     <div className="flex bg-gray-100 p-1 rounded-lg">
-                                                        <button
-                                                            onClick={() => setSubjectType("basic")}
-                                                            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${subjectType === "basic"
-                                                                ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold"
-                                                                : "text-gray-500 hover:text-gray-700"
-                                                                }`}
-                                                        >
-                                                            พื้นฐาน
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setSubjectType("advanced")}
-                                                            className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${subjectType === "advanced"
-                                                                ? "bg-white shadow-sm text-purple-600 ring-1 ring-purple-100 font-bold"
-                                                                : "text-gray-500 hover:text-gray-700"
-                                                                }`}
-                                                        >
-                                                            เพิ่มเติม
-                                                        </button>
+                                                        <button onClick={() => setSubjectType("basic")} className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${subjectType === "basic" ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold" : "text-gray-500 hover:text-gray-700"}`}>พื้นฐาน</button>
+                                                        <button onClick={() => setSubjectType("advanced")} className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${subjectType === "advanced" ? "bg-white shadow-sm text-purple-600 ring-1 ring-purple-100 font-bold" : "text-gray-500 hover:text-gray-700"}`}>เพิ่มเติม</button>
                                                     </div>
-                                                </div>
-                                                <div className="w-2/3">
-                                                    {/* Spacer or description */}
-                                                    {subjectType === 'advanced' && (
-                                                        <div className="text-xs text-purple-600 bg-purple-50 px-3 py-2 rounded-lg border border-purple-100 flex items-center gap-2 mt-6">
-                                                            <Sparkles className="w-3 h-3" />
-                                                            <span>คณิตศาสตร์เพิ่มเติม จะเน้นความลึกและซับซ้อนกว่าพื้นฐาน</span>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Topic Input - Validated */}
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-400 uppercase mb-2 flex justify-between">
-                                            <span>{inputSource === 'youtube' ? "YouTube URL" : inputSource === 'transcript' ? "Transcript" : "หัวข้อเรื่อง"}</span>
-                                            {!isFormValid && <span className="text-red-500">* จำเป็น</span>}
-                                        </label>
-
-                                        {inputSource === 'youtube' ? (
-                                            <div className="relative">
-                                                <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                                <input
-                                                    type="text"
-                                                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg border focus:ring-2 focus:border-transparent outline-none text-sm font-mono transition-all ${topicInputClass}`}
-                                                    placeholder="https://www.youtube.com/watch?v=..."
-                                                    value={youtubeUrl}
-                                                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                                                />
-                                                <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
-                                                    <span className="text-amber-500">💡</span>
-                                                    หาก AI ตอบว่าดูวิดีโอไม่ได้ ให้ลองใช้โหมด <b>Transcript</b> แล้ววางเนื้อหาแทน
-                                                </p>
-                                            </div>
-                                        ) : inputSource === 'transcript' ? (
-                                            <div className="relative">
-                                                <FileText className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                                                <textarea
-                                                    className={`w-full pl-10 pr-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent outline-none text-sm h-32 resize-none leading-relaxed transition-all ${topicInputClass}`}
-                                                    placeholder="วางข้อความ Transcript ยาวๆ ที่นี่..."
-                                                    value={transcript}
-                                                    onChange={(e) => setTranscript(e.target.value)}
-                                                />
-                                            </div>
-                                        ) : showStructuredInput ? (
-                                            <div className="space-y-3">
-                                                <div className="relative">
-                                                    <select
-                                                        className={`w-full pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none appearance-none cursor-pointer hover:border-gray-400 transition-colors ${selectedChapter === "custom" ? "rounded-b-none border-b-0" : ""}`}
-                                                        value={selectedChapter}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setSelectedChapter(val);
-                                                            // Reset subtopic when chapter changes, but if custom, we keep it empty
-                                                            if (val !== "custom") setSelectedSubTopic("");
-                                                        }}
-                                                    >
-                                                        <option value="" disabled>เลือกบทเรียน (Chapter)...</option>
-                                                        {availableChapters.map((c: any) => (
-                                                            <option key={c.title} value={c.title}>{c.title}</option>
-                                                        ))}
-                                                        <option value="custom" className="font-bold text-blue-600 bg-blue-50">
-                                                            + ระบุหัวข้อเอง (พิมพ์ข้อความ)
-                                                        </option>
-                                                    </select>
-                                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                        <BookOpen className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                    </div>
-                                                </div>
-
-                                                {/* Custom Chapter Input */}
-                                                {selectedChapter === "custom" && (
+                                    {/* Topic Input - Moved Source Logic out, keeping only Topic/Transcript-as-Topic Logic */}
+                                    {contentType === "video-summary" ? null : (
+                                        <div>
+                                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block flex justify-between">
+                                                <span>หัวข้อเรื่อง (Topic)</span>
+                                                {!isFormValid && <span className="text-red-500">* จำเป็น</span>}
+                                            </label>
+                                            {showStructuredInput ? (
+                                                <div className="space-y-3">
                                                     <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            className="w-full pl-10 pr-4 py-2.5 bg-blue-50/50 border border-t-0 border-blue-200/50 rounded-b-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all placeholder:text-blue-300 text-blue-900"
-                                                            placeholder="พิมพ์ชื่อบทเรียน หรือหัวข้อหลัก..."
-                                                            autoFocus
-                                                            value={customTopic}
-                                                            onChange={(e) => setCustomTopic(e.target.value)}
-                                                        />
-                                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400">
-                                                            <Type className="w-4 h-4" />
-                                                        </div>
+                                                        <select
+                                                            className={`w-full pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none appearance-none cursor-pointer hover:border-gray-400 transition-colors ${selectedChapter === "custom" ? "rounded-b-none border-b-0" : ""}`}
+                                                            value={selectedChapter}
+                                                            onChange={(e) => { const val = e.target.value; setSelectedChapter(val); if (val !== "custom") setSelectedSubTopic(""); }}
+                                                        >
+                                                            <option value="" disabled>เลือกบทเรียน (Chapter)...</option>
+                                                            {availableChapters.map((c: any) => (
+                                                                <option key={c.title} value={c.title}>{c.title}</option>
+                                                            ))}
+                                                            <option value="custom" className="font-bold text-blue-600 bg-blue-50">+ ระบุหัวข้อเอง (พิมพ์ข้อความ)</option>
+                                                        </select>
+                                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><BookOpen className="w-4 h-4" /></div>
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg></div>
                                                     </div>
-                                                )}
-
-                                                {(selectedChapter && selectedChapter !== "custom" && availableSubtopics.length > 0) && (
-                                                    <div className="relative animate-in fade-in slide-in-from-top-1 duration-200">
+                                                    {selectedChapter === "custom" && (
                                                         <div className="relative">
-                                                            <select
-                                                                className={`w-full pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none appearance-none cursor-pointer hover:border-gray-400 transition-colors ${selectedSubTopic === "custom" ? "rounded-b-none border-b-0" : ""}`}
-                                                                value={selectedSubTopic}
-                                                                onChange={(e) => setSelectedSubTopic(e.target.value)}
-                                                            >
-                                                                <option value="" disabled>เลือกหัวข้อย่อย (Sub-topic)...</option>
-                                                                {availableSubtopics.map((s: string) => (
-                                                                    <option key={s} value={s}>{s}</option>
-                                                                ))}
-                                                                <option value="custom" className="font-bold text-blue-600 bg-blue-50">
-                                                                    + ระบุหัวข้อย่อยเอง
-                                                                </option>
-                                                            </select>
-                                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                                <List className="w-4 h-4" />
-                                                            </div>
-                                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                            </div>
+                                                            <input type="text" className="w-full pl-10 pr-4 py-2.5 bg-blue-50/50 border border-t-0 border-blue-200/50 rounded-b-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all placeholder:text-blue-300 text-blue-900" placeholder="พิมพ์ชื่อบทเรียน..." autoFocus value={customTopic} onChange={(e) => setCustomTopic(e.target.value)} />
+                                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400"><Type className="w-4 h-4" /></div>
                                                         </div>
-
-                                                        {/* Custom Sub-topic Input - Reusing a new state variable needed */}
-                                                        {selectedSubTopic === "custom" && (
+                                                    )}
+                                                    {(selectedChapter && selectedChapter !== "custom" && availableSubtopics.length > 0) && (
+                                                        <div className="relative animate-in fade-in slide-in-from-top-1 duration-200">
                                                             <div className="relative">
-                                                                {/* We need a state for custom subtopic. Since component state is limited, we might need to add it or repurpose 'customTopic' logic.
-                                                                    Wait, 'customTopic' was being used for the unstructured input.
-                                                                    Let's assume we need to add 'customSubTopic' state in the next step.
-                                                                    For now, I will use a placeholder logic knowing I must add the state.
-                                                                 */}
-                                                                <input
-                                                                    type="text"
-                                                                    className="w-full pl-10 pr-4 py-2.5 bg-blue-50/50 border border-t-0 border-blue-200/50 rounded-b-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all placeholder:text-blue-300 text-blue-900"
-                                                                    placeholder="พิมพ์หัวข้อย่อย..."
-                                                                    autoFocus
-                                                                    id="custom-subtopic-input" // distinct ID
-                                                                    value={customSubTopic}
-                                                                    onChange={(e) => setCustomSubTopic(e.target.value)}
-                                                                />
-                                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400">
-                                                                    <Type className="w-4 h-4" />
-                                                                </div>
+                                                                <select className={`w-full pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none appearance-none cursor-pointer hover:border-gray-400 transition-colors ${selectedSubTopic === "custom" ? "rounded-b-none border-b-0" : ""}`} value={selectedSubTopic} onChange={(e) => setSelectedSubTopic(e.target.value)}>
+                                                                    <option value="" disabled>เลือกหัวข้อย่อย (Sub-topic)...</option>
+                                                                    {availableSubtopics.map((s: string) => (<option key={s} value={s}>{s}</option>))}
+                                                                    <option value="custom" className="font-bold text-blue-600 bg-blue-50">+ ระบุหัวข้อย่อยเอง</option>
+                                                                </select>
+                                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><List className="w-4 h-4" /></div>
+                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg></div>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="relative">
-                                                <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                                <input
-                                                    ref={customTopicRef}
-                                                    type="text"
-                                                    className={`w-full pl-10 pr-4 py-2.5 rounded-lg border focus:ring-2 focus:border-transparent outline-none text-sm placeholder:text-gray-300 transition-all ${topicInputClass}`}
-                                                    placeholder="ระบุหัวข้อเรื่อง..."
-                                                    value={customTopic}
-                                                    onChange={(e) => setCustomTopic(e.target.value)}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
+                                                            {selectedSubTopic === "custom" && (
+                                                                <div className="relative">
+                                                                    <input type="text" className="w-full pl-10 pr-4 py-2.5 bg-blue-50/50 border border-t-0 border-blue-200/50 rounded-b-lg text-sm font-medium focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all placeholder:text-blue-300 text-blue-900" placeholder="พิมพ์หัวข้อย่อย..." autoFocus value={customSubTopic} onChange={(e) => setCustomSubTopic(e.target.value)} />
+                                                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400"><Type className="w-4 h-4" /></div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="relative">
+                                                    <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                    <input ref={customTopicRef} type="text" className={`w-full pl-10 pr-4 py-2.5 rounded-lg border focus:ring-2 focus:border-transparent outline-none text-sm placeholder:text-gray-300 transition-all ${topicInputClass}`} placeholder="ระบุหัวข้อเรื่อง..." value={customTopic} onChange={(e) => setCustomTopic(e.target.value)} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Card 2: Configuration (การตั้งค่าผลลัพธ์) */}
+                        {/* Card 2: Source (แหล่งข้อมูล - NEW) */}
                         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                             <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2 border-b border-gray-100 pb-3">
                                 <span className="bg-black text-white w-6 h-6 rounded flex items-center justify-center text-xs">2</span>
+                                แหล่งข้อมูล (Source)
+                            </h2>
+
+                            <div className="space-y-6">
+                                {contentType === "video-summary" ? (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                                {INPUT_SOURCES.filter(s => s.id !== "topic").map(source => (
+                                                    <button
+                                                        key={source.id}
+                                                        onClick={() => setInputSource(source.id as any)}
+                                                        className={`flex-1 py-2 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-2 ${inputSource === source.id ? "bg-white shadow-sm text-black ring-1 ring-black/5 font-bold" : "text-gray-500 hover:text-gray-700"}`}
+                                                    >
+                                                        <source.icon className="w-4 h-4" />
+                                                        {source.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {inputSource === 'youtube' ? (
+                                            <div className="relative">
+                                                <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input type="text" className={`w-full pl-10 pr-4 py-2.5 rounded-lg border focus:ring-2 focus:border-transparent outline-none text-sm font-mono transition-all ${!youtubeUrl ? "border-red-200" : "border-gray-200"}`} placeholder="https://www.youtube.com/watch?v=..." value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} />
+                                            </div>
+                                        ) : (
+                                            <div className="relative">
+                                                <FileText className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                                                <textarea className={`w-full pl-10 pr-4 py-3 rounded-lg border focus:ring-2 focus:border-transparent outline-none text-sm h-32 resize-none leading-relaxed transition-all ${!transcript ? "border-red-200" : "border-gray-200"}`} placeholder="วางข้อความ Transcript..." value={transcript} onChange={(e) => setTranscript(e.target.value)} />
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            {SOURCE_MODES.map((mode) => (
+                                                <button
+                                                    key={mode.value}
+                                                    onClick={() => setSourceMode(mode.value)}
+                                                    className={`relative p-3 rounded-lg border text-left transition-all flex flex-col gap-2 h-full ${sourceMode === mode.value ? "border-black bg-blue-50/30 ring-1 ring-black/5" : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"}`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sourceMode === mode.value ? "bg-black text-white" : "bg-gray-100 text-gray-500"}`}>
+                                                        <mode.icon className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className={`text-sm font-bold ${sourceMode === mode.value ? "text-black" : "text-gray-700"}`}>{mode.label}</div>
+                                                        <div className="text-[10px] text-gray-500 leading-tight mt-1">{mode.desc}</div>
+                                                    </div>
+                                                    {sourceMode === mode.value && <div className="absolute top-3 right-3 text-black"><Check className="w-4 h-4" /></div>}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {sourceMode !== 'free' && (
+                                            <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 text-xs text-yellow-800 flex gap-2 items-start">
+                                                <Paperclip className="w-4 h-4 mt-0.5 shrink-0" />
+                                                <div>
+                                                    <span className="font-bold">คำแนะนำ:</span> อย่าลืมแนบไฟล์ (PDF, Word, หรือรูปภาพ) ไปพร้อมกับคำสั่งนี้ในหน้าแชทของ AI
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Card 3: Configuration (การตั้งค่าผลลัพธ์) - Renumbered */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                            <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2 border-b border-gray-100 pb-3">
+                                <span className="bg-black text-white w-6 h-6 rounded flex items-center justify-center text-xs">3</span>
                                 การตั้งค่าผลลัพธ์ (Configuration)
                             </h2>
 
@@ -994,6 +984,30 @@ ${specificInstructions}
                                 </div>
                             )}
 
+                            {/* Content Summary Settings */}
+                            {contentType === "content-summary" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">รูปแบบการสรุป (Format)</label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {CONTENT_SUMMARY_STYLES.map(style => (
+                                                <button
+                                                    key={style.value}
+                                                    onClick={() => setSummaryTone(style.value)}
+                                                    className={`p-3 text-sm rounded-lg border text-left transition-all ${summaryTone === style.value
+                                                        ? "bg-blue-50 border-blue-200 text-blue-700 shadow-sm ring-1 ring-blue-200"
+                                                        : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                                                        }`}
+                                                >
+                                                    <div className="font-bold mb-0.5">{style.label}</div>
+                                                    <div className="text-xs font-normal opacity-70">{style.description}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Video Summary Settings */}
                             {contentType === "video-summary" && (
                                 <div className="space-y-6">
@@ -1047,26 +1061,37 @@ ${specificInstructions}
                                         <span className="text-[10px] ml-2 text-gray-500 font-mono">prompt_v1.json</span>
                                     </div>
 
-                                    <button
-                                        className={`h-7 px-3 text-xs font-medium transition-all rounded-md flex items-center justify-center ${!generatedPrompt || !isFormValid
-                                            ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
-                                            : isCopied
-                                                ? "bg-green-600 text-white hover:bg-green-700 shadow-sm"
-                                                : "bg-[#2d2d2d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white"
-                                            }`}
-                                        onClick={copyToClipboard}
-                                        disabled={!generatedPrompt || !isFormValid}
-                                    >
-                                        {isCopied ? (
-                                            <>
-                                                <Check className="w-3 h-3 mr-1.5" /> Copied!
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Copy className="w-3 h-3 mr-1.5" /> Copy Code
-                                            </>
-                                        )}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            className={`h-7 px-3 text-xs font-medium transition-all rounded-md flex items-center justify-center ${!generatedPrompt || !isFormValid
+                                                ? "bg-gray-800 text-gray-500 cursor-not-allowed opacity-50"
+                                                : isCopied
+                                                    ? "bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                                                    : "bg-[#2d2d2d] text-gray-300 hover:bg-[#3d3d3d] hover:text-white"
+                                                }`}
+                                            onClick={copyToClipboard}
+                                            disabled={!generatedPrompt || !isFormValid}
+                                        >
+                                            {isCopied ? (
+                                                <>
+                                                    <Check className="w-3 h-3 mr-1.5" /> Copied!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-3 h-3 mr-1.5" /> Copy Code
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <a
+                                            href="https://gemini.google.com/"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="h-7 px-3 text-xs font-medium transition-all rounded-md flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-500 shadow-sm"
+                                        >
+                                            Open Gemini <ExternalLink className="w-3 h-3 ml-1.5" />
+                                        </a>
+                                    </div>
                                 </div>
                                 <textarea
                                     className="flex-1 bg-[#1e1e1e] text-green-400 p-4 font-mono text-xs resize-none focus:outline-none leading-relaxed selection:bg-green-900"

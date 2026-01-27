@@ -107,13 +107,40 @@ export const ExamRenderer: React.FC<ExamRendererProps> = ({ section, showAnswers
                                     : 'h-0 opacity-0 overflow-hidden'
                                 }`}>
                                 {showAnswers && (
-                                    <>
-                                        <div className="shrink-0 text-xl">💡</div>
-                                        <div className={`leading-relaxed ${sizeText}`}>
-                                            <span className="font-bold mb-1 opacity-70 block text-xs uppercase tracking-wider">Solution</span>
-                                            <RichText content={q.explanation} inlineParagraphs={false} />
+                                    <div className="flex flex-col gap-3 w-full">
+                                        {/* 1. Key Concept */}
+                                        {q.key_concept && (
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+                                                <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                                                    🔑 Key Concept (หลักการ)
+                                                </div>
+                                                <div className={`text-[#37352F] dark:text-gray-200 ${sizeText}`}>
+                                                    <RichText content={q.key_concept} inlineParagraphs={false} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* 2. Solution/Explanation */}
+                                        <div className="flex gap-3">
+                                            <div className="shrink-0 text-xl">💡</div>
+                                            <div className={`leading-relaxed w-full ${sizeText}`}>
+                                                <span className="font-bold mb-1 opacity-70 block text-xs uppercase tracking-wider">Solution</span>
+                                                <RichText content={q.explanation || ''} inlineParagraphs={false} />
+                                            </div>
                                         </div>
-                                    </>
+
+                                        {/* 3. Common Mistakes */}
+                                        {q.common_mistakes && (
+                                            <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800 mt-1">
+                                                <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                    ⚠️ Common Mistakes (จุดที่มักผิด)
+                                                </div>
+                                                <div className={`text-[#37352F] dark:text-gray-200 ${sizeText}`}>
+                                                    <RichText content={q.common_mistakes} inlineParagraphs={false} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         )}

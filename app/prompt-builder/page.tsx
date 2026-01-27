@@ -386,21 +386,22 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
   "questions": [
     {
       "question_id": 1,
-      "question_text": "โจทย์คำถามพร้อมเชื่อมโยงชีวิตจริง... (ใช้ LaTeX สำหรับสมการ)",
+      "question_text": "โจทย์คำถาม...",
       "choices": ["ก. ...", "ข. ...", "ค. ...", "ง. ..."],
-      "correct_answer": "ระบุตัวเลือกที่ถูก (เช่น ก.)",
+      "correct_answer": "ระบุตัวเลือกที่ถูก",
+      "key_concept": "ระบุหลักการสำคัญของข้อนี้ (Concept)",
       "step_by_step_solution": [
-        "ขั้นที่ 1: วิเคราะห์โจทย์...",
-        "ขั้นที่ 2: แสดงวิธีทำ...",
-        "ขั้นที่ 3: สรุปคำตอบ..."
-      ]${isGeometry ? ',\n      "graphic_code": "<svg>...</svg>"' : ''}
+        "ขั้นที่ 1: ...",
+        "ขั้นที่ 2: ..."
+      ],
+      "common_mistakes": "ระบุจุดที่นักเรียนมักพลาดบ่อยๆ ในข้อนี้"${isGeometry ? ',\n      "graphic_code": "<svg>...</svg>"' : ''}
     }
   ]
 }`;
+            specificInstructions = "เฉลยละเอียด (Important): ให้ระบุ 3 ส่วนประกอบเสมอ: 1. หลักการสำคัญ (Key Concept) 2. วิธีทำเป็นขั้นตอน (Step-by-step) 3. จุดที่มักผิด (Common Mistakes)";
             if (isGeometry) {
-                specificInstructions = "กรณีเป็นเรขาคณิต: ต้องสร้างโค้ด SVG ที่สมบูรณ์ใส่ในฟิลด์ graphic_code";
+                specificInstructions += "\nกรณีเป็นเรขาคณิต: ต้องสร้างโค้ด SVG ที่สมบูรณ์ใส่ในฟิลด์ graphic_code";
             }
-
         } else if (contentType === "lesson" || contentType === "lecture") {
             schemaDefinition = `{
   "content_type": "lesson",

@@ -117,6 +117,8 @@ export interface ExerciseItem {
     lines?: number; // Number of dotted lines to render if spaceForWork is true
     answer?: string; // Short answer
     detailedSolution?: string; // Step-by-step solution
+    key_concept?: string; // New: หลักการทำ
+    common_mistakes?: string; // New: จุดที่มักผิด
     graphic_code?: string; // SVG code for geometry/diagrams
     difficulty?: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา'; // Difficulty level
 }
@@ -133,6 +135,8 @@ export interface ExamQuestion {
     options: (string | { text: string; graphic_code?: string; id?: string })[];
     correctOption: number; // 0-based index
     explanation?: string;
+    key_concept?: string; // New: หลักการทำ
+    common_mistakes?: string; // New: จุดที่มักผิด
     graphic_code?: string; // SVG code for geometry/diagrams
     difficulty?: 'ง่าย' | 'ปานกลาง' | 'ยาก' | 'โจทย์ปัญหา';
 }

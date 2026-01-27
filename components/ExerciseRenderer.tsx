@@ -69,13 +69,26 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
 
                         {/* Show Solution if toggled ON */}
                         {showAnswers ? (
-                            <div className="ml-8 mt-3 rounded-md bg-[#F1F1EF] p-4 text-[#37352F] flex gap-3">
-                                <div className="shrink-0 text-xl">💡</div>
+                            <div className="ml-8 mt-3 rounded-md bg-[#F1F1EF] p-4 text-[#37352F] flex flex-col gap-4">
+
+                                {/* 1. Key Concept */}
+                                {item.key_concept && (
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-100 dark:border-blue-800">
+                                        <div className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                                            🔑 Concept (หลักการ)
+                                        </div>
+                                        <div className={sizeText}>
+                                            <RichText content={item.key_concept} inlineParagraphs={false} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 2. Answer & Detailed Solution */}
                                 <div className={`${sizeText} leading-relaxed w-full`}>
                                     {item.answer && (
-                                        <div className={`mb-2 flex items-baseline gap-2 ${sizeText}`}>
+                                        <div className={`mb-3 flex items-baseline gap-2 ${sizeText}`}>
                                             <span className="font-bold opacity-70 text-sm uppercase tracking-wider shrink-0">Answer:</span>
-                                            <span className="font-medium">
+                                            <span className="font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">
                                                 <RichText content={item.answer} />
                                             </span>
                                         </div>
@@ -83,12 +96,24 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                                     {item.detailedSolution && (
                                         <div>
                                             <div className={`font-bold opacity-70 mb-1 uppercase tracking-wider text-xs`}>Method</div>
-                                            <div className="">
+                                            <div className="pl-2 border-l-2 border-gray-300">
                                                 <RichText content={item.detailedSolution} inlineParagraphs={false} />
                                             </div>
                                         </div>
                                     )}
                                 </div>
+
+                                {/* 3. Common Mistakes */}
+                                {item.common_mistakes && (
+                                    <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded border border-red-100 dark:border-red-800">
+                                        <div className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                            ⚠️ Caution (จุดที่มักผิด)
+                                        </div>
+                                        <div className={sizeText}>
+                                            <RichText content={item.common_mistakes} inlineParagraphs={false} />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             // Else show lines regarding spaceForWork logic (Student Mode)

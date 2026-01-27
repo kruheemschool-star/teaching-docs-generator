@@ -47,10 +47,11 @@ export default function Dashboard() {
   const router = useRouter();
 
   // Real-time Data from Firestore
-  const { documents, loading: docsLoading } = useDocuments();
-  const { folders, loading: foldersLoading } = useFolders();
+  const { documents, loading: docsLoading, error: docsError } = useDocuments();
+  const { folders, loading: foldersLoading, error: foldersError } = useFolders();
 
   const isLoading = docsLoading || foldersLoading;
+  const error = docsError || foldersError;
 
   // Local State
   const [isSyncing, setIsSyncing] = useState(false);
@@ -250,6 +251,14 @@ export default function Dashboard() {
                 {isLoading ? 'Syncing...' : 'Cloud Active'}
               </div>
             </div>
+
+            {/* Error Alert */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2 text-sm max-w-md animate-in slide-in-from-top-2">
+                <Trash2 className="w-4 h-4" /> {/* Reuse existing icon or AlertCircle if available */}
+                <span>{error} (ตรวจสอบ internet หรือ Console)</span>
+              </div>
+            )}
 
             {/* Toolbar */}
             <div className="flex flex-wrap gap-3">

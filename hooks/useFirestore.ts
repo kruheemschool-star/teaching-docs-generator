@@ -3,9 +3,12 @@ import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { CourseDocument, DocumentMetadata, Folder } from '@/types';
 
+// ... types
+
 export function useDocuments() {
     const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const q = query(collection(db, "documents"));
@@ -13,27 +16,31 @@ export function useDocuments() {
             const docs: DocumentMetadata[] = [];
             snapshot.forEach((doc) => {
                 const data = doc.data() as CourseDocument;
-                // Ensure we extract metadata correctly
                 if (data.documentMetadata) {
                     docs.push(data.documentMetadata);
                 }
             });
-            // Sort client-side for flexibility or rely on Firestore orderBy
             docs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
             setDocuments(docs);
+            setLoading(false);
+            setError(null);
+        }, (err) => {
+            console.error("Firestore Error (Documents):", err);
+            setError(err.message);
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, []);
 
-    return { documents, loading };
+    return { documents, loading, error };
 }
 
 export function useFolders() {
     const [folders, setFolders] = useState<Folder[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const q = query(collection(db, "folders"));
@@ -42,15 +49,19 @@ export function useFolders() {
             snapshot.forEach((doc) => {
                 foldersData.push(doc.data() as Folder);
             });
-            // Sort newest first
             foldersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
             setFolders(foldersData);
+            setLoading(false);
+            setError(null);
+        }, (err) => {
+            console.error("Firestore Error (Folders):", err);
+            setError(err.message);
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, []);
 
-    return { folders, loading };
+    return { folders, loading, error };
 }

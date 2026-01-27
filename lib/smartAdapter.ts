@@ -144,8 +144,21 @@ const tryAdaptItem = (item: any): Section | null => {
         return adoptExamOrExercise(item)[0];
     }
 
-    // 3. Lecture/Content Detection
-    // Check for "content" or common content keys
+    // 3. Lesson/Lecture Detection
+    if (item.content_type === 'lesson' || (item.examples && Array.isArray(item.examples))) {
+        return {
+            id,
+            type: 'lesson',
+            title: item.title || item.sub_heading || item.heading || 'บทเรียน (Imported)',
+            content: constructLectureContent(item),
+            examples: item.examples,
+            // Map other lesson fields if available from AI
+            keyTakeaways: item.key_takeaways || item.keyPoints,
+            objectives: item.objectives
+        };
+    }
+
+    // 4. Fallback Lecture (Simple Content)
     if (item.content || item.sub_heading || item.summary || item.body) {
         return {
             id,

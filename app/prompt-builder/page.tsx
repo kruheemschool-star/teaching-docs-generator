@@ -354,7 +354,12 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
             dynamicInputs += `
 โทนการเขียน: ${WRITING_TONES.find(t => t.value === writingTone)?.label} (${WRITING_TONES.find(t => t.value === writingTone)?.description})
 ความยาวเนื้อหา: ${CONTENT_LENGTHS.find(l => l.value === contentLength)?.label} (${CONTENT_LENGTHS.find(l => l.value === contentLength)?.description})
-องค์ประกอบ: ${contentElements.join(", ")}`;
+องค์ประกอบ: ${contentElements.join(", ")}
+
+คำสั่งพิเศษ (สำคัญมาก):
+1. **เนื้อหาต้องละเอียดและเปรียบเทียบชัดเจน**: อธิบายให้ลึกซึ้ง หากมีสิ่งที่คล้ายกันต้องมีการเปรียบเทียบ (Comparison) ให้เห็นความต่าง
+2. **ต้องมีตัวอย่างประกอบ (Examples)**: ห้ามมีแต่เนื้อหาทฤษฎี ต้องมีตัวอย่างสั้นๆ ประกอบทุกหัวข้อย่อยเพื่อให้เห็นภาพจริง
+3. **การนำเสนอ**: ใช้ภาษาที่กระชับแต่เห็นภาพ (Visual) หลีกเลี่ยงกำแพงตัวหนังสือ`;
         } else if (contentType === "video-summary") {
             dynamicInputs += `
             โทนการสรุป: ${SUMMARY_TONES.find(t => t.value === summaryTone)?.label} (${SUMMARY_TONES.find(t => t.value === summaryTone)?.description})`;
@@ -402,13 +407,18 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
   "content_type": "lesson",
   "title": "${topicText}",
   "core_concept": "อธิบายหลักการสำคัญให้เข้าใจง่ายที่สุด",
-  "analogy": "เปรียบเทียบกับสิ่งที่เห็นภาพชัดเจน",
+  "analogy": "เปรียบเทียบกับสิ่งที่เห็นภาพชัดเจน (Analogy)",
   "sections": [
     {
       "sub_heading": "หัวข้อย่อย",
-      "content": "เนื้อหาอธิบายอย่างละเอียด",
-      "formula": "สูตรที่เกี่ยวข้อง (LaTeX)",
-      "example": "ตัวอย่างการใช้งาน"
+      "content": "เนื้อหาอธิบายอย่างละเอียดและมีการเปรียบเทียบ (Comparison)",
+      "examples": [
+        {
+          "problem": "ตัวอย่างสถานการณ์/โจทย์ (เช่น ตัวอย่างที่ 1 ...)",
+          "solution": "คำอธิบายหรือวิธีทำสั้นๆ"
+        }
+      ],
+      "formula": "สูตรที่เกี่ยวข้อง (LaTeX) หรือ Key Concept"
     }
   ],
   "summary": "สรุปเนื้อหาทั้งหมดใน 3 บรรทัด"

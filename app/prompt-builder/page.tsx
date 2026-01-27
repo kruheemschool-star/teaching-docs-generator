@@ -418,6 +418,7 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
             schemaDefinition = `{
   "content_type": "${contentType}",
   "topic": "${topicText}",
+  "subtopic": "${subTopic || "ระบุหัวข้อย่อย"}",
   "questions": [
     {
       "question_id": 1,
@@ -444,7 +445,9 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
         } else if (contentType === "lesson" || contentType === "lecture") {
             schemaDefinition = `{
   "content_type": "lesson",
-  "title": "${topicText}",
+  "topic": "${topicText}",
+  "subtopic": "${subTopic || "ระบุหัวข้อย่อย"}",
+  "title": "${topicText}${subTopic ? `: ${subTopic}` : ""}",
   "core_concept": "อธิบายหลักการสำคัญให้เข้าใจง่ายที่สุด",
   "analogy": "เปรียบเทียบกับสิ่งที่เห็นภาพชัดเจน (Analogy)",
   "sections": [
@@ -465,6 +468,8 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
         } else if (contentType === "video-summary") {
             schemaDefinition = `{
   "content_type": "summary",
+  "topic": "${topicText}",
+  "subtopic": "${subTopic || "ระบุหัวข้อย่อย"}",
   "title": "${topicText}",
   "key_takeaways": ["ประเด็นสำคัญ 1", "ประเด็นสำคัญ 2"],
   "common_mistakes": ["สิ่งที่มักเข้าใจผิด 1", "สิ่งที่มักเข้าใจผิด 2"],
@@ -475,6 +480,8 @@ ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ล
         } else if (contentType === "content-summary") {
             schemaDefinition = `{
   "content_type": "summary",
+  "topic": "${topicText}",
+  "subtopic": "${subTopic || "ระบุหัวข้อย่อย"}",
   "title": "${topicText}",
   "key_takeaways": [
     "${summaryTone === 'bullet_point' ? 'ประเด็นสำคัญข้อที่ 1' : 'เนื้อหาสรุป (Para 1)'}",

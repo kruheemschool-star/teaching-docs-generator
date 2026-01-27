@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { LessonSection, AnyBlock, DocumentMetadata } from '@/types';
 import { BlockEditor, convertLessonToBlocks } from './BlockRenderer';
 import { BookOpen, GraduationCap, Layout } from 'lucide-react';
+import { RichText } from './RichText';
 
 interface LessonRendererProps {
     section: LessonSection;
@@ -79,15 +80,18 @@ export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditi
                                     {metadata?.classLevel && metadata?.subjectType && <span className="w-1 h-1 rounded-full bg-gray-300"></span>}
                                     {metadata?.subjectType && <span>{metadata.subjectType}</span>}
 
-                                    {(metadata?.classLevel || metadata?.subjectType) && metadata?.topic && <span className="text-gray-300">/</span>}
+                                    {(metadata?.classLevel || metadata?.subjectType) && (metadata?.topic || metadata?.subtopic) && <span className="text-gray-300">/</span>}
 
                                     {metadata?.topic && <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{metadata.topic}</span>}
+
+                                    {metadata?.subtopic && metadata?.topic && <span className="text-gray-300">/</span>}
+                                    {metadata?.subtopic && <span className="text-gray-600 font-medium">{metadata.subtopic}</span>}
                                 </div>
 
                                 {/* Section Title */}
-                                <h2 className="text-2xl font-bold text-gray-900 leading-tight">
-                                    {section.title || "บทเรียน"}
-                                </h2>
+                                <div className="text-2xl font-bold text-gray-900 leading-tight [&_.prose]:text-2xl [&_.prose]:font-bold [&_.prose_p]:text-2xl [&_.prose_p]:font-bold">
+                                    <RichText content={section.title || "บทเรียน"} />
+                                </div>
                             </div>
                         </div>
                     </div>

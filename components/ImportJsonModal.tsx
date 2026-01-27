@@ -85,7 +85,9 @@ export const ImportJsonModal = ({ isOpen, onClose, onImport, currentFolderId }: 
                     classLevel: metadata?.classLevel || '',
                     semester: metadata?.semester || '',
                     updatedAt: new Date().toISOString(),
-                    folderId: currentFolderId || null
+                    folderId: currentFolderId || null,
+                    topic: metadata?.topic || data.topic || '',
+                    subtopic: metadata?.subtopic || data.subtopic || '',
                 },
                 sections: sections
             };

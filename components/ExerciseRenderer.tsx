@@ -52,14 +52,17 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
                             {metadata?.classLevel && metadata?.subjectType && <span className="w-1 h-1 rounded-full bg-gray-300"></span>}
                             {metadata?.subjectType && <span>{metadata.subjectType}</span>}
 
-                            {(metadata?.classLevel || metadata?.subjectType) && metadata?.topic && <span className="text-gray-300">/</span>}
+                            {(metadata?.classLevel || metadata?.subjectType) && (metadata?.topic || metadata?.subtopic) && <span className="text-gray-300">/</span>}
 
                             {metadata?.topic && <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{metadata.topic}</span>}
+
+                            {metadata?.subtopic && metadata?.topic && <span className="text-gray-300">/</span>}
+                            {metadata?.subtopic && <span className="text-gray-600 font-medium">{metadata.subtopic}</span>}
                         </div>
 
-                        <h2 className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight`}>
-                            {section.title || "แบบฝึกหัด"}
-                        </h2>
+                        <div className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight [&_.prose]:text-inherit [&_.prose]:leading-inherit [&_.prose_p]:text-inherit [&_.prose_p]:font-bold`}>
+                            <RichText content={section.title || "แบบฝึกหัด"} />
+                        </div>
                     </div>
                 </div>
             </div>

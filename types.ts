@@ -20,6 +20,7 @@ export interface DocumentMetadata {
     updatedAt: string; // ISO timestamp for sorting
     headerImage?: string; // Optional URL for a logo/header
     topic?: string; // e.g., "พีชคณิต", "เรขาคณิต"
+    subtopic?: string; // New: Specific subtopic
     icon?: string; // New: Emoji icon
 }
 

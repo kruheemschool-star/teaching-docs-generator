@@ -116,12 +116,64 @@ export const RichText: React.FC<RichTextProps> = ({ content, className = '', inl
                                         break;
                                     }
                                 }
+
+                                // Check for trailing exponent (e.g. ^2 or ^{...})
+                                if (i < input.length && input[i] === '^') {
+                                    output.push('^');
+                                    i++;
+                                    if (i < input.length) {
+                                        if (input[i] === '{') {
+                                            // Consume brace block
+                                            let depth = 1;
+                                            output.push('{');
+                                            i++;
+                                            while (i < input.length && depth > 0) {
+                                                const c = input[i];
+                                                output.push(c);
+                                                if (c === '{') depth++;
+                                                else if (c === '}') depth--;
+                                                i++;
+                                            }
+                                        } else {
+                                            // Consume single char
+                                            output.push(input[i]);
+                                            i++;
+                                        }
+                                    }
+                                }
+
                                 output.push('$$'); // Close block
                             } else {
                                 // Inline command -> Use $
                                 output.push('$');
                                 output.push(input.slice(i, j));
                                 i = j;
+                                // Check for trailing exponent for inline commands too?
+                                // Usually \pi^2 works fine in latex without {}, but wrapping $...$ stops it.
+                                // If we wrap $\pi$, then ^2 is outside -> $\pi$^2. This is bad.
+                                // So we MUST handle trailing exponent for inline commands too if we wrap them.
+
+                                if (i < input.length && input[i] === '^') {
+                                    output.push('^');
+                                    i++;
+                                    if (i < input.length) {
+                                        if (input[i] === '{') {
+                                            let depth = 1;
+                                            output.push('{');
+                                            i++;
+                                            while (i < input.length && depth > 0) {
+                                                const c = input[i];
+                                                output.push(c);
+                                                if (c === '{') depth++;
+                                                else if (c === '}') depth--;
+                                                i++;
+                                            }
+                                        } else {
+                                            output.push(input[i]);
+                                            i++;
+                                        }
+                                    }
+                                }
                                 output.push('$');
                             }
                         }
@@ -146,6 +198,11 @@ export const RichText: React.FC<RichTextProps> = ({ content, className = '', inl
         const segments = wrappedContent.split('$');
         for (let k = 0; k < segments.length; k += 2) {
             let text = segments[k];
+
+            // Pattern 0: Generic Exponents (e.g. x^2, y^{2}) -> $x^{2}$
+            // Must be careful not to break URLs or specific codes, but this is RichText context.
+            // Look for alphanumeric base followed by ^
+            text = text.replace(/\b([a-zA-Z0-9]+)\^(\{[\w\-\.\+\(\)]+\}|[\w\-\.\+\(\)]+)/g, '$$$1^{$2}$$');
 
             // Pattern 1: Scientific Notation
             text = text.replace(/(\d+(?:\.\d+)?)\s*[x×]\s*10\^\{?(\-?\d+)\}?/g, '$$$1 \\times 10^{$2}$$');

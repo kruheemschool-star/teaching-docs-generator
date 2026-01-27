@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { LessonSection, AnyBlock } from '@/types';
+import { LessonSection, AnyBlock, DocumentMetadata } from '@/types';
 import { BlockEditor, convertLessonToBlocks } from './BlockRenderer';
+import { BookOpen, GraduationCap, Layout } from 'lucide-react';
 
 interface LessonRendererProps {
     section: LessonSection;
@@ -8,9 +9,10 @@ interface LessonRendererProps {
     showAnswers?: boolean;
     onUpdate?: (updatedSection: LessonSection) => void;
     fontSizeLevel?: number;
+    metadata?: DocumentMetadata;
 }
 
-export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditing = false, showAnswers = false, onUpdate, fontSizeLevel = 0 }) => {
+export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditing = false, showAnswers = false, onUpdate, fontSizeLevel = 0, metadata }) => {
 
     // Auto-convert legacy content to blocks on mount if needed
     useEffect(() => {
@@ -51,14 +53,46 @@ export const LessonRenderer: React.FC<LessonRendererProps> = ({ section, isEditi
 
     const blocksToRender = normalizeBlocks(rawBlocks);
 
+    // Parse subtopic from title/metadata if possible, otherwise use what we have.
+    // metadata.topic is usually "Chapter" or Main Topic
+    // metadata.subtopic is not in interface, but let's assume section.title is the subtopic or specific lesson title.
+
     return (
         <div className={`mb-8 section-lesson ${section.pageBreakBefore ? 'break-before-page' : ''}`}>
-            {/* Title */}
-            {section.title && (
-                <h2 className="text-xl font-bold border-b-2 border-gray-800 pb-1 mb-4 no-print text-gray-400">
-                    📖 {section.title} (Block Editor Mode)
-                </h2>
-            )}
+
+            {/* Improved Header Styling */}
+            <div className="mb-8 no-print">
+                <div className="flex flex-col gap-3 items-start">
+                    {/* Content Type Badge (Black Pill) */}
+                    <span className="bg-black text-white px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        เนื้อหาบทเรียน (LESSON)
+                    </span>
+
+                    {/* Main Title & Metadata */}
+                    <div className="w-full pb-4 border-b border-gray-200">
+                        <div className="flex justify-between items-start gap-4">
+                            <div>
+                                {/* Context/breadcrumbs: Class - Subject - Chapter */}
+                                <div className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1.5">
+                                    {metadata?.classLevel && <span>{metadata.classLevel}</span>}
+                                    {metadata?.classLevel && metadata?.subjectType && <span className="w-1 h-1 rounded-full bg-gray-300"></span>}
+                                    {metadata?.subjectType && <span>{metadata.subjectType}</span>}
+
+                                    {(metadata?.classLevel || metadata?.subjectType) && metadata?.topic && <span className="text-gray-300">/</span>}
+
+                                    {metadata?.topic && <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{metadata.topic}</span>}
+                                </div>
+
+                                {/* Section Title */}
+                                <h2 className="text-2xl font-bold text-gray-900 leading-tight">
+                                    {section.title || "บทเรียน"}
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div className="min-h-[200px]">
                 <BlockEditor

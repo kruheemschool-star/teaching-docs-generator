@@ -1,11 +1,13 @@
 import React from 'react';
-import { ExerciseSection } from '@/types';
+import { ExerciseSection, DocumentMetadata } from '@/types';
 import { RichText } from './RichText';
+import { BookOpen, CheckSquare } from 'lucide-react';
 
 interface ExerciseRendererProps {
     section: ExerciseSection;
     showAnswers?: boolean;
     fontSizeLevel?: number;
+    metadata?: DocumentMetadata;
 }
 
 const getDifficultyBadge = (difficulty?: string, fontSizeLevel = 0) => {
@@ -24,7 +26,7 @@ const getDifficultyBadge = (difficulty?: string, fontSizeLevel = 0) => {
     }
 };
 
-export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, showAnswers = false, fontSizeLevel = 0 }) => {
+export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, showAnswers = false, fontSizeLevel = 0, metadata }) => {
     // Determine sizing classes
     const sizeTitle = fontSizeLevel === 0 ? 'text-xl' : fontSizeLevel === 1 ? 'text-2xl' : 'text-3xl';
     const sizeNumber = fontSizeLevel === 0 ? 'text-xl' : fontSizeLevel === 1 ? 'text-2xl' : 'text-3xl';
@@ -32,11 +34,35 @@ export const ExerciseRenderer: React.FC<ExerciseRendererProps> = ({ section, sho
 
     return (
         <div className={`mb-10 section-exercise break-inside-avoid ${section.pageBreakBefore ? 'break-before-page' : ''}`}>
-            {section.title && (
-                <h2 className={`${sizeTitle} font-bold text-[#37352F] mb-4 tracking-tight`}>
-                    {section.title}
-                </h2>
-            )}
+
+            {/* Improved Header Styling */}
+            <div className="mb-8 no-print">
+                <div className="flex flex-col gap-3 items-start">
+                    {/* Content Type Badge */}
+                    <span className="bg-black text-white px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                        <CheckSquare className="w-3.5 h-3.5" />
+                        แบบฝึกหัด (EXERCISE)
+                    </span>
+
+                    {/* Main Title & Metadata */}
+                    <div className="w-full pb-4 border-b border-gray-200">
+                        {/* Context/breadcrumbs */}
+                        <div className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1.5">
+                            {metadata?.classLevel && <span>{metadata.classLevel}</span>}
+                            {metadata?.classLevel && metadata?.subjectType && <span className="w-1 h-1 rounded-full bg-gray-300"></span>}
+                            {metadata?.subjectType && <span>{metadata.subjectType}</span>}
+
+                            {(metadata?.classLevel || metadata?.subjectType) && metadata?.topic && <span className="text-gray-300">/</span>}
+
+                            {metadata?.topic && <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{metadata.topic}</span>}
+                        </div>
+
+                        <h2 className={`${sizeTitle} font-bold text-[#37352F] tracking-tight leading-tight`}>
+                            {section.title || "แบบฝึกหัด"}
+                        </h2>
+                    </div>
+                </div>
+            </div>
 
             {section.instructions && (
                 <p className={`mb-6 text-gray-600 italic ${sizeText}`}>

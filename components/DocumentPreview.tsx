@@ -38,12 +38,13 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                         showAnswers={showAnswers}
                         onUpdate={(updatedSection) => onUpdateSection && onUpdateSection(section.id, updatedSection)}
                         fontSizeLevel={fontSizeLevel}
+                        metadata={documentMetadata}
                     />
                 );
             case 'exercise':
-                return <ExerciseRenderer key={`${section.id}-${index}`} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} />;
+                return <ExerciseRenderer key={`${section.id}-${index}`} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} metadata={documentMetadata} />;
             case 'exam':
-                return <ExamRenderer key={`${section.id}-${index}`} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} />;
+                return <ExamRenderer key={`${section.id}-${index}`} section={section} showAnswers={showAnswers} fontSizeLevel={fontSizeLevel} metadata={documentMetadata} />;
             default:
                 return null;
         }

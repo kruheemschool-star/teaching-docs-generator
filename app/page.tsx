@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, FolderOpen, FolderPlus, ChevronRight, Home, RefreshCw, X, Trash2, Tent, CloudUpload } from 'lucide-react';
+import { Search, FolderOpen, FolderPlus, ChevronRight, Home, RefreshCw, X, Trash2, Tent, CloudUpload, ArrowUpCircle } from 'lucide-react';
 import { DocumentMetadata, Folder } from '@/types';
 import { DocumentCard } from '@/components/DocumentCard';
 import { FolderCard } from '@/components/FolderCard';
@@ -10,18 +10,8 @@ import { MoveDocumentModal } from '@/components/MoveDocumentModal';
 import { ImportJsonModal } from '@/components/ImportJsonModal';
 import { BackupModal } from '@/components/BackupModal';
 
-// Local Storage Utils
-import {
-  getAllDocuments,
-  getAllFolders,
-  createDocument,
-  createFolder,
-  deleteDocument,
-  deleteFolder,
-  moveDocumentToFolder,
-  updateDocumentTitle,
-  duplicateDocument
-} from '@/lib/storage';
+// Local Storage Utils (Only for Migration check)
+import { getAllDocuments as getLocalDocuments } from '@/lib/storage';
 
 // New Firestore Hooks & Utils
 import { useDocuments, useFolders } from '@/hooks/useFirestore';
@@ -32,6 +22,8 @@ import {
   createFolderInFirestore,
   deleteFolderFromFirestore,
   moveDocumentInFirestore,
+  updateDocumentTitleInFirestore,
+  duplicateDocumentInFirestore,
   migrateToFirestore
 } from '@/lib/firestoreUtils';
 
@@ -54,15 +46,15 @@ const TOPICS = [
 export default function Dashboard() {
   const router = useRouter();
 
-  // Real-time Data from Firestore (Background)
-  const { documents: cloudDocs, loading: cloudLoading } = useDocuments();
-  const { folders: cloudFolders, loading: cloudFoldersLoading } = useFolders();
+  // Real-time Data from Firestore
+  const { documents, loading: docsLoading } = useDocuments();
+  const { folders, loading: foldersLoading } = useFolders();
+
+  const isLoading = docsLoading || foldersLoading;
 
   // Local State
-  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [localDocCount, setLocalDocCount] = useState(0);
 
   // UI State
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -79,41 +71,30 @@ export default function Dashboard() {
   const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set());
   const selectionMode = selectedDocIds.size > 0;
 
-  // Initial Load & Refresh Logic
-  const refreshData = () => {
-    setIsLoading(true);
-    // Add small delay to prevent flicker if operations are instant
-    setTimeout(() => {
-      setDocuments(getAllDocuments());
-      setFolders(getAllFolders());
-      setIsLoading(false);
-    }, 100);
-  };
-
+  // Check for local documents for migration suggestion
   useEffect(() => {
-    refreshData();
+    // Check if we have local data that isn't in cloud (mock check: just check existence)
+    const local = getLocalDocuments();
+    setLocalDocCount(local.length);
   }, []);
 
-  // Sync Logic
-  const handleSyncToCloud = async () => {
-    if (!confirm("ยืนยันที่จะอัพเดทข้อมูลในเครื่องขึ้น Cloud?")) return;
+  // Sync/Migrate Logic
+  const handleMigrate = async () => {
+    if (!confirm(`พบเอกสารในเครื่อง ${localDocCount} รายการ ยืนยันที่จะย้ายขึ้น Cloud ทั้งหมด?`)) return;
     setIsSyncing(true);
     try {
-      const localDocs = getAllDocuments();
-      let successCount = 0;
-
-      // Upload loop
-      for (const docMeta of localDocs) {
-        const fullDoc = await import('@/lib/storage').then(m => m.getDocument(docMeta.id));
-        if (fullDoc) {
-          await saveDocumentToFirestore(fullDoc);
-          successCount++;
-        }
+      const result = await migrateToFirestore();
+      if (result.success) {
+        alert(`ย้ายข้อมูลสำเร็จ ${result.count} รายการ`);
+        // Optional: clear local storage after success?
+        // localStorage.clear(); 
+        setLocalDocCount(0);
+      } else {
+        alert("เกิดข้อผิดพลาดในการย้ายข้อมูล");
       }
-      alert(`ซิงค์ข้อมูลสำเร็จ ${successCount} รายการ`);
     } catch (e) {
       console.error(e);
-      alert("เกิดข้อผิดพลาดในการซิงค์");
+      alert("เกิดข้อผิดพลาดในการย้ายข้อมูล");
     } finally {
       setIsSyncing(false);
     }
@@ -137,56 +118,43 @@ export default function Dashboard() {
     const idsToDelete = Array.from(selectedDocIds);
     if (!confirm(`ต้องการลบเอกสาร ${idsToDelete.length} รายการใช่หรือไม่?`)) return;
 
-    idsToDelete.forEach(id => {
-      deleteDocument(id);
-      deleteDocumentFromFirestore(id).catch(err => console.error("Cloud delete error", err)); // Hybrid delete
-    });
+    // Execute deletes in parallel
+    await Promise.all(idsToDelete.map(id => deleteDocumentFromFirestore(id)));
     clearSelection();
-    refreshData();
   };
 
-  // --- Handlers using LocalStorage + Cloud (Hybrid) ---
+  // --- Handlers (Firestore Only) ---
 
   const handleDelete = async (id: string) => {
     if (confirm("ต้องการลบเอกสารนี้ใช่หรือไม่?")) {
-      deleteDocument(id);
-      deleteDocumentFromFirestore(id).catch(err => console.error("Cloud delete error", err)); // Hybrid delete
-      refreshData();
+      await deleteDocumentFromFirestore(id);
     }
   };
 
   const handleRename = async (id: string, currentTitle: string) => {
     const newTitle = prompt("กรุณาระบุชื่อเอกสารใหม่:", currentTitle);
     if (newTitle && newTitle.trim() !== "") {
-      updateDocumentTitle(id, newTitle.trim());
-      // No easy updateTitle API for firestore without full write in this setup?
-      // Actually lib/firestoreUtils likely has updateDocumentTitleInFirestore.
-      // Let's assume we can just re-save the doc if we had the full content, requires fetch.
-      // For now, local rename is fast. Cloud rename happens on next sync.
-      refreshData();
+      await updateDocumentTitleInFirestore(id, newTitle.trim());
     }
   };
 
   const handleDuplicate = async (id: string) => {
-    const result = duplicateDocument(id);
-    if (result) {
-      refreshData();
-      // Optional: auto-upload duplicate?
-      // saveDocumentToFirestore(result);
-    } else {
+    setIsLoading(true); // Optional optimistic loading
+    const result = await duplicateDocumentInFirestore(id);
+    if (!result) {
       alert("เกิดข้อผิดพลาดในการทำสำเนา");
     }
+    setIsLoading(false);
   };
 
   const handleCreateNew = async () => {
-    const newDoc = createDocument("เอกสารใหม่", "ม.1", "เทอม 1");
+    // Create directly in Firestore
+    const newDoc = await createDocumentInFirestore("เอกสารใหม่", "ม.1", "เทอม 1");
 
     if (newDoc) {
       if (currentFolderId) {
-        moveDocumentToFolder(newDoc.documentMetadata.id, currentFolderId);
+        await moveDocumentInFirestore(newDoc.documentMetadata.id, currentFolderId);
       }
-      // Attempt background upload
-      saveDocumentToFirestore(newDoc).catch(e => console.warn("Background upload failed:", e));
       router.push(`/editor/${newDoc.documentMetadata.id}`);
     } else {
       alert("สร้างเอกสารล้มเหลว");
@@ -198,17 +166,13 @@ export default function Dashboard() {
   const handleCreateFolder = async () => {
     const name = prompt("ตั้งชื่อโฟลเดอร์ใหม่:");
     if (name && name.trim()) {
-      createFolder(name.trim());
-      createFolderInFirestore(name.trim()).catch(e => console.warn("Cloud folder create failed", e));
-      refreshData();
+      await createFolderInFirestore(name.trim());
     }
   };
 
   const handleDeleteFolder = async (id: string) => {
     if (confirm("ต้องการลบโฟลเดอร์นี้และเนื้อหาภายในใช่หรือไม่?")) {
-      deleteFolder(id);
-      deleteFolderFromFirestore(id).catch(e => console.warn("Cloud folder delete failed", e));
-      refreshData();
+      await deleteFolderFromFirestore(id);
     }
   };
 
@@ -222,17 +186,13 @@ export default function Dashboard() {
 
   const handleMoveConfirm = async (targetFolderId: string | null) => {
     if (moveModal.docId) {
-      moveDocumentToFolder(moveModal.docId, targetFolderId);
-      moveDocumentInFirestore(moveModal.docId, targetFolderId).catch(e => console.warn("Cloud move failed", e));
-      refreshData();
+      await moveDocumentInFirestore(moveModal.docId, targetFolderId);
       setMoveModal({ isOpen: false, docId: null });
     }
   };
 
   const handleFileDrop = async (docId: string, targetFolderId: string) => {
-    moveDocumentToFolder(docId, targetFolderId);
-    moveDocumentInFirestore(docId, targetFolderId).catch(e => console.warn("Cloud move failed", e));
-    refreshData();
+    await moveDocumentInFirestore(docId, targetFolderId);
   };
 
   // Filter Logic
@@ -286,42 +246,44 @@ export default function Dashboard() {
                 {isLoading && <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />}
               </h2>
               {/* Cloud Status Indicator */}
-              <div className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${!cloudLoading ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                <div className={`w-2 h-2 rounded-full ${!cloudLoading ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                {cloudLoading ? 'Connecting...' : 'Online'}
+              <div className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 ${!isLoading ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                <div className={`w-2 h-2 rounded-full ${!isLoading ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                {isLoading ? 'Syncing...' : 'Cloud Active'}
               </div>
             </div>
 
-            {/* Show toolbar only if we have documents OR if we are filtering OR if loading */}
-            {(documents.length > 0 || isLoading) && (
-              <div className="flex flex-wrap gap-3">
+            {/* Toolbar */}
+            <div className="flex flex-wrap gap-3">
+
+              {/* Migration Action - Show if local docs exist */}
+              {localDocCount > 0 && (
                 <button
-                  onClick={handleSyncToCloud}
+                  onClick={handleMigrate}
                   disabled={isSyncing}
-                  className="px-4 py-2.5 bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-medium transition flex items-center gap-2 text-sm"
-                  title="อัพโหลดข้อมูลในเครื่องขึ้น Cloud"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition shadow-lg shadow-indigo-500/30 flex items-center gap-2 text-sm animate-pulse"
+                  title="ย้ายข้อมูลจากเครื่องขึ้น Cloud"
                 >
-                  {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
-                  <span className="hidden sm:inline">Sync to Cloud</span>
+                  {isSyncing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}
+                  <span className="hidden sm:inline">Migrate Local Data ({localDocCount})</span>
                 </button>
+              )}
 
-                <button
-                  onClick={handleCreateFolder}
-                  className="px-4 py-2.5 bg-transparent border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition flex items-center gap-2 text-sm"
-                >
-                  <FolderPlus className="w-4 h-4" />
-                  <span className="hidden sm:inline">สร้างโฟลเดอร์</span>
-                </button>
+              <button
+                onClick={handleCreateFolder}
+                className="px-4 py-2.5 bg-transparent border border-gray-300 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition flex items-center gap-2 text-sm"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">สร้างโฟลเดอร์</span>
+              </button>
 
-                <button
-                  onClick={handleCreateNew}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-sm shadow-blue-500/30 flex items-center gap-2 text-sm"
-                >
-                  <FolderPlus className="w-4 h-4" />
-                  <span>สร้างเอกสาร</span>
-                </button>
-              </div>
-            )}
+              <button
+                onClick={handleCreateNew}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition shadow-sm shadow-blue-500/30 flex items-center gap-2 text-sm"
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span>สร้างเอกสาร</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -448,7 +410,10 @@ export default function Dashboard() {
                 </h3>
 
                 <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
-                  เริ่มสร้างเอกสารแรกเพื่อเปลี่ยนโจทย์ยากให้เป็นเรื่องง่ายกันเลย!
+                  {localDocCount > 0
+                    ? "แต่เราพบข้อมูลในเครื่องของคุณ กดปุ่ม Migrate ด้านบนเพื่อย้ายข้อมูลมาได้เลย!"
+                    : "เริ่มสร้างเอกสารแรกเพื่อเปลี่ยนโจทย์ยากให้เป็นเรื่องง่ายกันเลย!"
+                  }
                 </p>
 
                 <button
@@ -476,14 +441,20 @@ export default function Dashboard() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onImport={() => {
-          refreshData(); // Just refresh local data
+          // Re-check local docs to urge migration
+          const local = getLocalDocuments();
+          setLocalDocCount(local.length);
         }}
         currentFolderId={currentFolderId}
       />
       <BackupModal
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
-        onRestoreComplete={refreshData}
+        onRestoreComplete={() => {
+          // Re-check local docs to urge migration
+          const local = getLocalDocuments();
+          setLocalDocCount(local.length);
+        }}
       />
 
       {/* Bulk Action Bar */}

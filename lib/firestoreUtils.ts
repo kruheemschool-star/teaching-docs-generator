@@ -108,6 +108,21 @@ export const createDocumentInFirestore = async (
     }
 };
 
+// Helper to remove undefined values recursively
+const sanitizeForFirestore = (obj: any): any => {
+    if (obj === null || obj === undefined) return null;
+    if (typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+
+    const result: any = {};
+    for (const key in obj) {
+        if (obj[key] !== undefined) {
+            result[key] = sanitizeForFirestore(obj[key]);
+        }
+    }
+    return result;
+};
+
 export const saveDocumentToFirestore = async (docData: CourseDocument) => {
     try {
         const ref = doc(db, COLLECTION_DOCS, docData.documentMetadata.id);
@@ -119,7 +134,11 @@ export const saveDocumentToFirestore = async (docData: CourseDocument) => {
             },
             lastModified: serverTimestamp()
         };
-        await setDoc(ref, payload, { merge: true });
+
+        // Sanitize payload to remove undefined values
+        const cleanPayload = sanitizeForFirestore(payload);
+
+        await setDoc(ref, cleanPayload, { merge: true });
         return true;
     } catch (error) {
         console.error("Error saving document:", error);

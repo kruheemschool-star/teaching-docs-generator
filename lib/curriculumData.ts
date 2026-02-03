@@ -3,7 +3,8 @@
 
 export type ClassLevel =
     | "ป.1" | "ป.2" | "ป.3" | "ป.4" | "ป.5" | "ป.6"
-    | "ม.1" | "ม.2" | "ม.3" | "ม.4" | "ม.5" | "ม.6";
+    | "ม.1" | "ม.2" | "ม.3" | "ม.4" | "ม.5" | "ม.6"
+    | "สอบเข้า ม.1";
 
 export type Semester = "semester1" | "semester2";
 export type SubjectType = "basic" | "advanced";
@@ -26,6 +27,7 @@ export const CLASS_LEVELS: { value: ClassLevel; label: string; group: string }[]
     { value: "ม.4", label: "มัธยมศึกษาปีที่ 4", group: "มัธยมศึกษา" },
     { value: "ม.5", label: "มัธยมศึกษาปีที่ 5", group: "มัธยมศึกษา" },
     { value: "ม.6", label: "มัธยมศึกษาปีที่ 6", group: "มัธยมศึกษา" },
+    { value: "สอบเข้า ม.1", label: "สอบเข้า ม.1", group: "สอบเข้า" },
 ];
 
 export const SEMESTERS: { value: Semester; label: string }[] = [
@@ -140,6 +142,27 @@ const MATH_BASIC: CurriculumMap["Subject"] = {
         semester2: [
             { title: "การวิเคราะห์และนำเสนอข้อมูลเชิงปริมาณ", subtopics: ["ฮิสโทแกรม", "แผนภาพจุด", "แผนภาพกล่อง", "ค่ากลางของข้อมูล", "ค่าวัดการกระจาย", "ค่าวัดตำแหน่งที่"] }
         ]
+    },
+    "สอบเข้า ม.1": {
+        semester1: [
+            { title: "จำนวนนับและการบวก ลบ คูณ และหาร", subtopics: [] },
+            { title: "สมการและการแก้สมการ", subtopics: [] },
+            { title: "ตัวประกอบของจำนวนนับ", subtopics: [] },
+            { title: "มุมและส่วนของเส้นตรง", subtopics: [] },
+            { title: "เส้นขนาน", subtopics: [] },
+            { title: "ทิศทางและแผนผัง", subtopics: [] },
+            { title: "เศษส่วน", subtopics: [] },
+            { title: "การบวก ลบ คูณ และหารทศนิยม", subtopics: [] },
+            { title: "การหารทศนิยม", subtopics: [] },
+            { title: "รูปสี่เหลี่ยม", subtopics: [] },
+            { title: "รูปสามเหลี่ยม", subtopics: [] },
+            { title: "รูปวงกลม", subtopics: [] },
+            { title: "บทประยุกต์", subtopics: [] },
+            { title: "รูปทรงและปริมาตร", subtopics: [] },
+            { title: "แผนภูมิและกราฟ", subtopics: [] },
+            { title: "ความน่าจะเป็น", subtopics: [] }
+        ],
+        semester2: []
     }
 };
 

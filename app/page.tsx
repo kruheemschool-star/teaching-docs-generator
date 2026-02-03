@@ -30,7 +30,7 @@ import {
   updateFolderIconInFirestore
 } from '@/lib/firestoreUtils';
 
-const CLASS_LEVELS = ["ประถมศึกษา", "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"];
+const CLASS_LEVELS = ["ประถมศึกษา", "ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6", "สอบเข้า ม.1"];
 const SEMESTERS = [
   { value: "semester1", label: "เทอม 1" },
   { value: "semester2", label: "เทอม 2" }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Sparkles, Tent } from 'lucide-react';
 import { ModeToggle } from './ModeToggle';
+import Image from 'next/image';
 
 export const Navbar = () => {
     const router = useRouter();
@@ -19,7 +20,7 @@ export const Navbar = () => {
                     <div className="flex items-center gap-8">
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2 group">
-                            <div className="w-8 h-8 bg-black dark:bg-white text-white dark:text-black rounded-lg flex items-center justify-center font-bold text-lg group-hover:bg-gray-800 dark:group-hover:bg-gray-200 transition">T</div>
+                            <Image src="/logo.png" alt="Teaching Docs Logo" width={32} height={32} className="rounded-lg" />
                             <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Teaching Docs</span>
                         </Link>
 

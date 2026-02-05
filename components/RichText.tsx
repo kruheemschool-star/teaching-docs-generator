@@ -20,6 +20,16 @@ export const RichText: React.FC<RichTextProps> = ({ content, className = '', inl
         // "imes" appearing instead of "\times" (often due to bad unescaping of \t)
         processed = processed.replace(/(\d)\s*imes\s*(\d)/g, '$1 \\times $2');
 
+        // Fix: Remove backticks around LaTeX-like content (AI often wraps math in code blocks)
+        // We act conservatively: only strip if it looks like LaTeX (has backslashes or typical math chars)
+        processed = processed.replace(/`([^`]+)`/g, (match, code) => {
+            // Check for LaTeX commands or clear math patterns
+            const isMath = /\\[a-zA-Z]+|\^\{|\_\{|\d+\^|\$\$/.test(code);
+            return isMath ? code : match;
+        });
+
+        // Pattern 1: Scientific Notation (e.g., 3 x 10^8 or 3 × 10^8 or 3 x 10^{8}) -> $3 \times 10^{8}$
+
         // Pattern 1: Scientific Notation (e.g., 3 x 10^8 or 3 × 10^8 or 3 x 10^{8}) -> $3 \times 10^{8}$
         // Supports optional {} around exponent
         processed = processed.replace(/(\d+(?:\.\d+)?)\s*[x×]\s*10\^\{?(\-?\d+)\}?/g, '$$$1 \\times 10^{$2}$$');

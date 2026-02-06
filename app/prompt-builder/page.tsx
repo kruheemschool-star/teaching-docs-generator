@@ -75,6 +75,21 @@ const QUESTION_STYLES = [
     { value: "problem", label: "โจทย์ปัญหา (Word Problem)", description: "เน้นวิเคราะห์โจทย์สถานการณ์จริง" }
 ];
 
+const WORD_PROBLEM_TYPES = [
+    {
+        value: "standard",
+        label: "มาตรฐาน (Standard)",
+        emoji: "⭐",
+        description: "สถานการณ์ทั่วไป ซื้อของ แบ่งเงิน คำนวณค่าใช้จ่าย"
+    },
+    {
+        value: "creative",
+        label: "สร้างสรรค์ (Creative)",
+        emoji: "💡",
+        description: "ธีมทันสมัย: Gaming, TikTok, Crypto, AI, EV"
+    }
+];
+
 const DIFFICULTIES = [
     { value: "easy", label: "ง่าย", color: "text-green-600" },
     { value: "medium", label: "ปานกลาง", color: "text-yellow-600" },
@@ -199,6 +214,7 @@ export default function PromptBuilder() {
     const [questionType, setQuestionType] = useState("multiple_choice");
     const [difficulty, setDifficulty] = useState("medium");
     const [itemCount, setItemCount] = useState(5);
+    const [wordProblemType, setWordProblemType] = useState<"standard" | "creative">("standard");
     const [includeCommonMistakes, setIncludeCommonMistakes] = useState(false); // New State
 
     // Lesson specific
@@ -334,6 +350,7 @@ export default function PromptBuilder() {
         transcript,
         questionType,
         questionStyle,
+        wordProblemType, // Word Problem Type Added
         difficulty,
         itemCount,
         includeCommonMistakes,
@@ -343,6 +360,8 @@ export default function PromptBuilder() {
         summaryTone,
         additionalInstructions
     ]);
+
+
 
 
     const generatePrompt = () => {
@@ -383,7 +402,10 @@ ${questionType === 'subjective' ? "**สำคัญ: ห้ามมีตั�
 จำนวนข้อ: ${itemCount} ข้อ
 ${includeCommonMistakes ? "พิเศษ: ต้องระบุ 'จุดที่มักผิดบ่อย (Common Mistake)' ในส่วนเฉลยของทุกข้อ เพื่อเตือนนักเรียน" : ""}
 ${questionStyle === 'skill' ? "**สำคัญ: เน้นโจทย์ลักษณะ Drill หรือฝึกฝนซ้ำๆ เพื่อให้เกิดความชำนาญ (Fluency) และความแม่นยำ (Accuracy) ใน Concept พื้นฐาน ไม่เน้นโจทย์ซับซ้อนหรือพลิกแพลงมากนัก เหมาะสำหรับการสร้างพื้นฐานที่แน่นปึ้ก**" : ""}
-${questionStyle === 'problem' ? "**สำคัญ: เน้น 'โจทย์ปัญหา (Word Problems)' ที่ต้องมีการวิเคราะห์สถานการณ์ สร้างเรื่องราวที่สมจริงและเกี่ยวข้องกับชีวิตประจำวัน ไม่ใช่เพียงแค่การคำนวณตัวเลขตรงๆ นักเรียนต้องตีความโจทย์เพื่อเขียนประโยคสัญลักษณ์ก่อนแสดงวิธีทำ**" : ""}`;
+${questionStyle === 'problem' ? (wordProblemType === 'standard'
+                    ? "**สำคัญ: เน้น 'โจทย์ปัญหา (Word Problems)' แบบมาตรฐาน ใช้สถานการณ์ชีวิตประจำวันทั่วไป เช่น ซื้อของในตลาด แบ่งขนม คำนวณค่าน้ำค่าไฟ หาพื้นที่ห้อง ฯลฯ นักเรียนต้องตีความโจทย์เพื่อเขียนประโยคสัญลักษณ์ก่อนแสดงวิธีทำ**"
+                    : "**สำคัญ: เน้น 'โจทย์ปัญหา (Word Problems)' แบบสร้างสรรค์ ใช้ธีมทันสมัยที่เด็กสนใจ เช่น:\n- 🎮 Gaming: Roblox coins, Minecraft blocks, ROV diamonds, Valorant points\n- 📱 Social Media: TikTok followers, YouTube subscribers, Instagram likes\n- 🎵 Entertainment: Spotify streams, Netflix watch time, K-pop album sales\n- 💰 FinTech: PromptPay, Mobile banking, Crypto trading, NFT\n- 🚀 Tech: AI assistants, Electric vehicles, Space tourism\n- 🍔 Modern Life: Food delivery (Grab/Lineman), Online shopping\n- 🌍 Environment: Carbon footprint, Solar panels, Electric scooters\n\nสร้างเรื่องราวที่สนุก น่าสนใจ และเข้ากับยุคสมัย ทำให้เด็กรู้สึกว่าคณิตศาสตร์มีความเกี่ยวข้องกับชีวิตจริง**"
+                ) : ""}`;
         } else if (contentType === "lesson" || contentType === "lecture") {
             dynamicInputs += `
 โทนการเขียน: ${WRITING_TONES.find(t => t.value === writingTone)?.label} (${WRITING_TONES.find(t => t.value === writingTone)?.description})
@@ -907,6 +929,45 @@ ${specificInstructions}
                                             ))}
                                         </div>
                                     </div>
+
+                                    {/* Word Problem Type Selector - Appears when 'problem' is selected */}
+                                    {questionStyle === 'problem' && (
+                                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <label className="text-xs font-bold text-gray-400 uppercase mb-3 block flex items-center gap-2">
+                                                <Sparkles className="w-3.5 h-3.5" />
+                                                ประเภทโจทย์ปัญหา
+                                            </label>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {WORD_PROBLEM_TYPES.map(type => (
+                                                    <button
+                                                        key={type.value}
+                                                        onClick={() => setWordProblemType(type.value as "standard" | "creative")}
+                                                        className={`group relative p-3 text-left rounded-lg border transition-all ${wordProblemType === type.value
+                                                            ? type.value === 'creative'
+                                                                ? "bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300 ring-1 ring-purple-200 shadow-sm"
+                                                                : "bg-blue-50/50 border-black ring-1 ring-black/5 shadow-sm"
+                                                            : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xl">{type.emoji}</span>
+                                                            <div className="flex-1">
+                                                                <div className={`text-sm font-bold ${wordProblemType === type.value
+                                                                    ? type.value === 'creative' ? "text-purple-700" : "text-black"
+                                                                    : "text-gray-700"}`}>
+                                                                    {type.label}
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 mt-0.5">{type.description}</div>
+                                                            </div>
+                                                            {wordProblemType === type.value && (
+                                                                <Check className={`w-4 h-4 ${type.value === 'creative' ? 'text-purple-600' : 'text-black'}`} />
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Common Mistakes */}
                                     <div className="pt-4 border-t border-gray-50">

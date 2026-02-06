@@ -134,6 +134,10 @@ body {
 }
 
 /* Font Logic */
+.font-ibm-plex {
+  --font-family-base: var(--font-ibm-plex-thai);
+}
+
 .font-sarabun {
   --font-family-base: var(--font-sarabun);
 }
@@ -152,6 +156,10 @@ body {
 
 .font-charm {
   --font-family-base: var(--font-charm);
+}
+
+.font-kanit {
+  --font-family-base: var(--font-kanit);
 }
 
 /* Document Container (Web View Mode) */

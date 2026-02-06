@@ -5,6 +5,7 @@ export interface Folder {
     name: string;
     createdAt: string;
     icon?: string; // New: Emoji icon
+    order?: number; // New: For sorting
 }
 
 export interface DocumentMetadata {
@@ -22,6 +23,7 @@ export interface DocumentMetadata {
     topic?: string; // e.g., "พีชคณิต", "เรขาคณิต"
     subtopic?: string; // New: Specific subtopic
     icon?: string; // New: Emoji icon
+    order?: number; // New: For drag-and-drop sorting
 }
 
 export interface BaseSection {

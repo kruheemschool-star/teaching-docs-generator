@@ -20,7 +20,15 @@ export function useDocuments() {
                     docs.push(data.documentMetadata);
                 }
             });
-            docs.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+            docs.sort((a, b) => {
+                // Primary sort: Order (ascending)
+                const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+                if (orderA !== orderB) return orderA - orderB;
+
+                // Secondary sort: UpdatedAt (descending)
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+            });
 
             setDocuments(docs);
             setLoading(false);
@@ -49,7 +57,15 @@ export function useFolders() {
             snapshot.forEach((doc) => {
                 foldersData.push(doc.data() as Folder);
             });
-            foldersData.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            foldersData.sort((a, b) => {
+                // Primary sort: Order (ascending)
+                const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+                if (orderA !== orderB) return orderA - orderB;
+
+                // Secondary sort: CreatedAt (descending)
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
 
             setFolders(foldersData);
             setLoading(false);

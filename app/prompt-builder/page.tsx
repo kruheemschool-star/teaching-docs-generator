@@ -9,6 +9,7 @@ import {
     Paperclip, Layers, Globe
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // --- Constants & Data ---
 
@@ -562,7 +563,16 @@ ${specificInstructions}
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">AI Prompt Builder</h1>
+                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+                                <Image
+                                    src="/robot-logo.png"
+                                    alt="AI Robot"
+                                    width={48}
+                                    height={48}
+                                    className="w-12 h-12 object-contain"
+                                />
+                                AI Prompt Builder
+                            </h1>
                             <p className="text-gray-500 text-sm">เครื่องมือสร้างคำสั่งสำหรับ AI เพื่อผลิตสื่อการสอน</p>
                         </div>
                     </div>

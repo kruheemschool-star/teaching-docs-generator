@@ -275,3 +275,36 @@ export const updateDocumentIconInFirestore = async (id: string, icon: string) =>
         console.error("Error updating document icon:", error);
     }
 };
+
+// --- Order/Sorting Operations ---
+
+export const updateDocumentsOrderInFirestore = async (items: { id: string; order: number }[]) => {
+    try {
+        const batch = writeBatch(db);
+        items.forEach((item) => {
+            const ref = doc(db, COLLECTION_DOCS, item.id);
+            // Document persistence structure is nested in documentMetadata
+            batch.update(ref, { "documentMetadata.order": item.order });
+        });
+        await batch.commit();
+        return true;
+    } catch (error) {
+        console.error("Error batch updating document order:", error);
+        return false;
+    }
+};
+
+export const updateFoldersOrderInFirestore = async (items: { id: string; order: number }[]) => {
+    try {
+        const batch = writeBatch(db);
+        items.forEach((item) => {
+            const ref = doc(db, COLLECTION_FOLDERS, item.id);
+            batch.update(ref, { order: item.order });
+        });
+        await batch.commit();
+        return true;
+    } catch (error) {
+        console.error("Error batch updating folder order:", error);
+        return false;
+    }
+};
